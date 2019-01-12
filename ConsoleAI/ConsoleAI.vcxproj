@@ -151,9 +151,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AINetClass.h" />
+    <ClInclude Include="AINetDataContainer.h" />
+    <ClInclude Include="CodeFromWeb.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AINetClass.cpp" />
+    <ClCompile Include="AINetDataContainer.cpp" />
+    <ClCompile Include="CodeFromWeb.cpp" />
     <ClCompile Include="ConsoleAI.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
