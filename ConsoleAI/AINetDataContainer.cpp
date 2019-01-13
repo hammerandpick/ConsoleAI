@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "stdafx.h"
 #include<vector>
 #include "AINetDataContainer.h"
 

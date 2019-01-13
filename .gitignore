@@ -6,7 +6,10 @@
 *.user
 *.userosscache
 *.sln.docstates
+
+# Added by hammerandpick
 *.csv
+[Ww]indows[Aa][Pp][Pp]/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
