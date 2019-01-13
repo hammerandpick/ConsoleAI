@@ -1251,7 +1251,7 @@ void AINetClass::closeTrainingDataFile(std::ifstream &ptrDataFile)
 	}
 	else
 	{
-		this->throwFailure("File couldnt be closed", false);
+		this->throwFailure("File could not be closed", false);
 	}
 }
 
@@ -1259,8 +1259,9 @@ void AINetClass::combineNetworks(AINetClass *ptrAiNetClass, std::mutex & ptrMute
 {
 	// combining networks
 	std::lock_guard<std::mutex> guard(ptrMutex);
-	printf("\n Error this:\t%8f.4", this->calculateErrorMSE(-1));
-	printf("\n Error ptr:\t%8f.4", ptrAiNetClass->calculateErrorMSE(-1));
+	this->calculateErrorMSE(-1);
+	ptrAiNetClass->calculateErrorMSE(-1);
+	
 	//TODO:BUG Check if sorting works
 	ptrAiNetClass->sortNetwork();
 
@@ -1383,7 +1384,7 @@ void AINetClass::trainNetwork(bool bSilent)
 		// calculate the Worst error and output
 		if (this->IsTrainingRestart())
 		{
-			printf("Max Error at Row %i with value %8.6f\n", iWorstErrorRow, dWorstError);
+			// printf("Max Error at Row %i with value %8.6f\n", iWorstErrorRow, dWorstError);
 			iWorstErrorRow = 0;
 			dWorstError = 0.0;
 		}
@@ -1392,7 +1393,7 @@ void AINetClass::trainNetwork(bool bSilent)
 			iWorstErrorRow = this->Counter() % this->getTrainingDataRowsMax();
 			dWorstError = max(dWorstError, sumOfSquaredErrors);
 		}
-		this->displayIO(sumOfSquaredErrors); // if options set displaying all net
+		this->printIO(sumOfSquaredErrors); // if options set displaying all net
 
 		if (this->bOptionDisplayAllNodes)
 		{
@@ -1402,8 +1403,9 @@ void AINetClass::trainNetwork(bool bSilent)
 	}
 }
 
-void AINetClass::displayIO(double sumOfSquaredErrors)
+void AINetClass::printIO(double sumOfSquaredErrors)
 {
+	COORD ord;
 	if (this->bOptionIO)
 	{
 		if (this->IsTrainingRestart())
@@ -1443,6 +1445,8 @@ void AINetClass::displayIO(double sumOfSquaredErrors)
 	}
 	else
 	{
+		ord.X = 0;
+		ord.Y = 0;
 		if (this->IsTrainingRestart())
 		{
 			printf("\n");
@@ -1467,6 +1471,7 @@ void AINetClass::displayIO(double sumOfSquaredErrors)
 		{
 			printf(".");
 		}
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), ord);
 	}
 }
 

@@ -59,7 +59,7 @@ public:
 	void combineNetworks(AINetClass *ptrAiNetClass, std::mutex & ptrMutex, unsigned int iNumber=0);
 	void createNetwork(std::vector<std::string> tmpsNetwork);
 	void createNetwork(std::vector<unsigned int> tmpviNetwork);
-	void displayIO(double sumOfSquaredErrors);
+	void printIO(double sumOfSquaredErrors);
 	void displayWeights();
 	void displayStatus();
 	void displayAllNodes(double sumOfSquaredErrors);
