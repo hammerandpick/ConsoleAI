@@ -579,8 +579,9 @@ void AINetClass::setOptionDisplayAllNodes(bool bDisplayAll)
 
 size_t AINetClass::loadTrainingDataFile()
 {
-	// read training data file
-	// local variables
+	/**
+
+	*/
 	std::string theLine = "no open file.";
 	int theFirstElement = 0;
 	unsigned int iNumberOfLines = 0;

@@ -1,11 +1,15 @@
 #include "pch.h"
 #include "stdafx.h"
-#include<vector>
+#include <vector>
 #include "AINetDataContainer.h"
 
 
 AINetDataContainer::AINetDataContainer()
 {
+	/** Constructior for AINetDataContainer
+	  * @param tdm -- double optional parameter, can be used for initalizing the whole network
+	*/
+
 	this->vvTrainingDataMatrix.clear();
 	this->vdNetworkTopology.clear();
 }
