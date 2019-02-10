@@ -1,4 +1,7 @@
 #pragma once
+
+#include <memory>
+#include "CodeFromWeb.h"
 #include "AINetDataContainer.h"
 
 
@@ -29,13 +32,13 @@ public:
 	
 	double LearningRate();
 	size_t TrainingDataColumns();
-	std::string TrainingDataColumnName(unsigned int tmpColumn, bool shortList=false);
 	unsigned int getTrainingDataRowsMax();	
 	unsigned int getMaximumNodesLayer(bool bGetMaximumNodes = false);
 	unsigned int getLayerByNode(unsigned int itmpNode);
 	bool continueCalculation();
 	bool IsTrainingRestart();
 	bool IsLastLayer(unsigned int tmpLayer);
+	bool linkTrainingDataContainer(std::shared_ptr<AINetDataContainer> ptrToContainer);
 	bool getOptionStatus();
 	bool setNumInputNodes(unsigned int tmpInputNodes);
 	bool setNumOutputNodes(unsigned int tmpOutputNodes);
@@ -94,7 +97,6 @@ public:
 	/* Training Data */
 	std::vector<std::vector<double>> *getTrainingData();
 	void shuffleTrainingData();
-	void setTrainingDataSample();
 
 	void trainLine();
 	void trainNetwork(bool bSilent=false);
@@ -113,6 +115,8 @@ private:
 	std::vector<double> vecThresholds = { 0.0 };; // vector containing threshold values,Theshold also known as bias. used as automatic linear offset in calculation
 	std::vector<std::vector<double>> vecWeights = { { 0.0 } }; // matrix containing weight between nodes
 	std::vector<double> vecCalcDelta = { 0.0 };
+	std::vector<size_t> vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
+
 
 	/* Data File */
 	std::string strAIDataFileName = "";
@@ -158,7 +162,7 @@ private:
 	std::vector<std::string> errorList = { "0" };
 	std::vector<std::vector<double>> vvErrors={ {0.0} };
 	std::vector<std::string> vstrResultFilenames = { "" };
-	std::shared_ptr<AINetDataContainer> ainDataContainer;
+	std::shared_ptr<AINetDataContainer> ptrAINDataContainer = nullptr;
 	
 	// functions
 	std::string generateFileOutput(std::string& strFileContents);
@@ -167,15 +171,11 @@ private:
 	bool throwFailure(std::string tmpError, bool doexit);
 	double getTrainingDataValue(unsigned int row, unsigned int column);
 	double updateWeightsInLayer(int tmpLayer);
-	static inline void ReplaceAllStrings(std::string &str, const std::string& from, const std::string& to);
 	std::string getExcelColumn(size_t stColumn);
 	unsigned int getNumberOfInputNodes();
 	unsigned int getNumberOfOutputNodes();
 	unsigned int resizeVectors();
 	int validLayer(int& tmpLayer, bool tmpRemoveOffset = false);
-	bool openTrainingDataFile(std::ifstream &ptrDataFile);
-	void closeTrainingDataFile(std::ifstream &ptrDataFile);
-
 
 	std::string NodeFunctionXLS(unsigned int tmpNode, std::string tmpCalculatedInput);
 	std::string NodeFunctionJS(unsigned int tmpNode, std::string tmpCalculatedInput);

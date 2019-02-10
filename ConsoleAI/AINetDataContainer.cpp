@@ -1,27 +1,561 @@
 #include "pch.h"
 #include "stdafx.h"
+#include <algorithm>    // std::random_shuffle
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include "CodeFromWeb.h"
 #include "AINetDataContainer.h"
 
 
 AINetDataContainer::AINetDataContainer()
 {
-	/** Constructior for AINetDataContainer
-	  * @param tdm -- double optional parameter, can be used for initalizing the whole network
+	/** Constructor for AINetDataContainer
+	  * \relates AINetDataContainer(double tdm)
 	*/
 
-	this->vvTrainingDataMatrix.clear();
-	this->vdNetworkTopology.clear();
-}
-
-AINetDataContainer::AINetDataContainer(double tdm)
-{
-	this->vvTrainingDataMatrix = { {tdm} };
-	this->vdNetworkTopology = { 0 };
+	this->vvTrainingDataMatrix = { {1.0,0.0,0.0,1.0},{1.0,0.0,1.0,0.0},{1.0,1.0,0.0,0.0},{1.0,1.0,1.0,0.0} }; // standard xor training data
+	this->vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
 }
 
 AINetDataContainer::~AINetDataContainer()
 {
 	this->vvTrainingDataMatrix.clear();
 	this->vdNetworkTopology.clear();
+}
+
+
+size_t AINetDataContainer::getTrainingDataRowsMax()
+{
+	/** This function returns the maximum number of training data rows. It calculates the maximum number of rows from the file reduced by the number of previous and next rows when using a time sceme.
+		\return the maximum number of training data rows.
+	*/
+	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows - (size_t)this->intTimePreviousRows;
+}
+
+size_t AINetDataContainer::getTrainingDataColumnsMax()
+{
+	/** This function returns the number of columns in training data.
+		\retun The number of columns in training data.
+	*/
+	return this->vvTrainingDataMatrix.size();
+}
+
+size_t AINetDataContainer::getTrainingDataBegin()
+{
+	/** This function is used to calculate the start of the training data. It will skip the number of defined previous rows, which will be used in calculation. Data has to be in ascending order.
+	*/
+	return (size_t)this->intTimePreviousRows;
+}
+
+size_t AINetDataContainer::getTrainingDataEnd()
+{
+	/** This function is used to calculate the end of the training data. It will skip the number of defined next rows, which will be used in calculation. Data has to be in ascending order.
+	*/
+	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows;
+}
+
+size_t AINetDataContainer::getTotalLines()
+{
+	return this->intLinesRead;
+}
+
+size_t AINetDataContainer::getNumberOfInputNodes()
+{
+	/** This returns the number of input nodes from the network topology
+		\return Number of input nodes.	
+	*/
+	return this->vdNetworkTopology.front();
+}
+
+size_t AINetDataContainer::getNumberOfOutputNodes()
+{
+	/** This function returns the number of output nodes from network topology of training data file
+		\return The number of output nodes.
+	*/
+	return this->vdNetworkTopology.back();
+}
+
+double AINetDataContainer::getTrainingDataValue(size_t column, size_t row)
+{
+	/** This function returns the value of the training data in \p colum of \p row.
+		\param colum The colum to be returned.
+		\param row The row to be retrned.
+		\return Value of \p column and \p row.
+	*/
+	double dReturn = 0.0;
+	if (row < this->vvTrainingDataMatrix.size())
+	{
+		if (column < this->vvTrainingDataMatrix.at(row).size())
+		{
+			dReturn= this->vvTrainingDataMatrix.at(row).at(column);
+		}
+		else
+		{
+			std::cerr << "column out of range: " << column;
+		}
+	}
+	else
+	{
+		std::cerr << "row out of range: " << row;
+	}
+	return dReturn;
+}
+
+size_t AINetDataContainer::getTrainingRowSizeT(size_t row)
+{
+	/** This will return the size of the specified \p row.
+		\param row The row of interest.
+		\return The size of the specified \p row or zero if row is out of bounds.
+	*/
+
+	size_t intReturn = 0;
+	if (row < this->vvTrainingDataMatrix.size())
+	{
+		intReturn = this->vvTrainingDataMatrix.at(row).size();
+	}
+	return intReturn;
+}
+
+std::vector<size_t> AINetDataContainer::getNetworkTopology()
+{
+	/** This function will return the topology from training data file.
+		\return The topology of the network from training data file.
+	*/
+	return this->vdNetworkTopology;
+}
+
+std::vector<std::vector<double>> AINetDataContainer::getTrainingDataMatrix()
+{
+	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
+		\return a new training data object.
+	*/
+	return this->vvTrainingDataMatrix;
+}
+
+std::vector<std::vector<double>>* AINetDataContainer::ptrTrainingDataMatix()
+{
+	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
+		\return a new training data object.
+	*/
+	return &this->vvTrainingDataMatrix;
+}
+
+std::string AINetDataContainer::getTrainingDataFileName()
+{
+	/** This will return the file name of the training data file.
+		\return String of file name.
+	*/
+	return this->strAIDataFileName;
+}
+
+std::string AINetDataContainer::setTrainingDataFileName(std::string strFileName)
+{
+	/** This will set the file name of the training data file. 
+		\return String of file name.
+	*/
+	// TODO: add some verification here.
+	this->strAIDataFileName;
+	return this->strAIDataFileName;
+}
+
+bool AINetDataContainer::setOptionCSVGermanStyle(bool bGerStyle)
+{
+	/** This is used to set the option to convert a german style *.csv into a standard *.csv 
+		\param bGerStyle if a german csv file is to be loaded this has to be set to true
+		\return returns input parameter if set correctly.
+	*/
+	this->bOptionCSVGER = bGerStyle;
+	return this->bOptionCSVGER;
+}
+
+bool AINetDataContainer::setPreferredNetworkTopology(std::string strPref)
+{
+	/** this function is used to set the prefered network topology
+		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
+		\return returns true if successfull
+	*/
+
+	std::string strDelimiter = ",";
+	std::vector<std::string> strElements;
+
+	for (size_t stStart = 0, stEnd; stStart < strPref.length(); stStart = stEnd + strDelimiter.length())
+	{
+		size_t stPosition = strPref.find(strDelimiter, stStart);
+		stEnd = stPosition != std::string::npos ? stPosition : strPref.length();
+
+		std::string strElement = strPref.substr(stStart, stEnd - stStart);
+
+		strElements.push_back(strElement);
+
+	}
+
+	if (strPref.empty() || (strPref.substr(strPref.size() - strDelimiter.size(), strDelimiter.size()) == strDelimiter))
+	{
+		strElements.push_back("");
+	}
+
+	return false;
+}
+
+bool AINetDataContainer::setPreferredNetworkTopology(std::vector<size_t> vsPref)
+{
+	/** this function is used to set the prefered network topology
+		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
+		\return returns true if successfull
+	*/
+	this->vdNetworkTopology = vsPref;
+	return (this->vdNetworkTopology == vsPref);
+}
+
+std::vector<size_t> AINetDataContainer::splitStringToSizeT(const std::string & strInput, const std::string & strDelimiter)
+{
+	/** this function i used to split a string into a vector of integers.
+		\param strInput is a string of elements separated by \p strDelimiter
+		\param strDelimiter is string, which is used to split \p strInput into pieces.
+		\return is returning the content of \p strInput converted into a vector of integers.
+	*/
+	std::vector<size_t> strElements;
+
+	for (size_t stStart = 0, stEnd; stStart < strInput.length(); stStart = stEnd + strDelimiter.length())
+	{
+		size_t stPosition = strInput.find(strDelimiter, stStart);
+		stEnd = stPosition != std::string::npos ? stPosition : strInput.length();
+
+		std::string strElement = strInput.substr(stStart, stEnd - stStart);
+
+		if (atoi(strElement.c_str())>=1)
+		{
+			// do not pushback if layer is empty (0).
+			strElements.push_back(atoi(strElement.c_str()));
+		}
+	}
+
+	if (strInput.empty() || (strInput.substr(strInput.size() - strDelimiter.size(), strDelimiter.size()) == strDelimiter))
+	{
+		// do nothing
+	}
+
+	return strElements;
+}
+
+std::vector<double> AINetDataContainer::splitStringToDouble(const std::string & strInput, const std::string & strDelimiter)
+{
+	/** this function i used to split a string into a vector of doubles.
+		\param strInput is a string of elements separated by \p strDelimiter
+		\param strDelimiter is string, which is used to split \p strInput into pieces.
+		\return is returning the content of \p strInput converted into a vector of doubles.
+	*/
+	std::vector<double> strElements;
+
+	for (size_t stStart = 0, stEnd; stStart < strInput.length(); stStart = stEnd + strDelimiter.length())
+	{
+		size_t stPosition = strInput.find(strDelimiter, stStart);
+		stEnd = stPosition != std::string::npos ? stPosition : strInput.length();
+
+		std::string strElement = strInput.substr(stStart, stEnd - stStart);
+
+		strElements.push_back(strtod(strElement.c_str(),NULL));
+
+	}
+
+	if (strInput.empty() || (strInput.substr(strInput.size() - strDelimiter.size(), strDelimiter.size()) == strDelimiter))
+	{
+		strElements.push_back(0.0);
+	}
+
+	return strElements;
+}
+
+void AINetDataContainer::closeTrainingDataFile(std::ifstream &ptrDataFile)
+{
+	/** This function is used to close the training data file after reading.
+	 * \param ptrDataFile is a reference to the data file currently used.
+	*/
+	if (ptrDataFile.is_open()) 
+	{
+		// good, file is open.
+		ptrDataFile.close();
+	}
+	else
+	{
+		std::cerr << "training data file could not be closed. ";
+	}
+}
+
+std::string AINetDataContainer::convertFromCSVGermanStyle(std::string & strFileContents)
+{
+	/** this converts a german style *.csv file to a standard *.csv file
+		\param strFileContents is a reference to the string data to be converted
+		\return the value of the converted string
+	*/
+	if (this->bOptionCSVGER)
+	{
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ",", ".");
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ";", ",");
+	}
+	return strFileContents;
+}
+
+std::string AINetDataContainer::convertToCSVStandardStyle(std::string & strFileContents)
+{
+	/** this converts a german style *.csv file to a standard *.csv file
+		\param strFileContents is a reference to the string data to be converted
+		\return the value of the converted string
+	*/
+	
+	CodeFromWeb::ReplaceAllStrings(strFileContents, ",", ";");
+	CodeFromWeb::ReplaceAllStrings(strFileContents, ".", ",");
+
+	return strFileContents;
+}
+
+size_t AINetDataContainer::loadTrainingDataFile()
+{
+	/** This function is used to load all the training data.
+	  * \return the number of unreadable lines.
+	*/
+	std::string theLine = "no open file.";
+	int theFirstElement = 0;
+	unsigned int iNumberOfLines = 0;
+	unsigned int iNumberOfFalseLines = 0;
+	int iTimePreviousElements = 0;	// How many previous rows for calculation?
+
+	std::ifstream theAIDataFile;
+
+	this->openTrainingDataFile(theAIDataFile);
+
+	// clear old training data
+	this->vvTrainingDataMatrix.clear();
+
+	if (theAIDataFile.is_open())
+	{
+		// Read First Line and store for Information.
+		std::getline(theAIDataFile, theLine);
+		this->strAIDataFileHeader = theLine;
+
+		//read the second line and reconfigure network.
+		std::getline(theAIDataFile, theLine);
+		this->convertFromCSVGermanStyle(theLine);
+		if ((theLine.find_first_of(",") == theLine.npos))
+		{
+			// this is no german style csv but german style is set
+			// disabling option ger
+			this->bOptionCSVGER = false;
+			
+			// converting line backwards
+			this->convertToCSVStandardStyle(theLine);
+			
+		}
+		this->vdNetworkTopology = this->splitStringToSizeT(theLine, ",");
+
+		std::vector<double> vdLocalVector(1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back());
+		std::string loadedNumber = "";
+
+		// now start looking for maxiterations in aidatafile
+		// and setting maximum iterations
+		std::getline(theAIDataFile, theLine);
+		this->convertFromCSVGermanStyle(theLine);
+		theFirstElement = 0;
+		int currentElementCounter = 0;
+		while (theLine.length() > 0)
+		{
+			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
+			else theFirstElement = (int)theLine.length();
+			// read value
+			// example for this line:
+			// 1000,-5,3
+			// 1000 iterations, -5 5 line above current line are historic data, 3 columns are used for historic data (5x3=)15 additional input nodes added.
+			switch (currentElementCounter)
+			{
+			case 0:
+				// first one on this line is maxiterations
+				this->intMaxIterations = atoi(theLine.substr(0, theFirstElement).c_str());
+				break;
+			case 1:
+				//second element on this line is number of elements in timescale
+				this->intTimePreviousRows = atoi(theLine.substr(0, theFirstElement).c_str());
+				break;
+			case 2:
+				this->intTimePrevNumberOfColumns = atoi(theLine.substr(0, theFirstElement).c_str());
+				break;
+			case 5:
+				this->intPercentOfDataToBeUsed = atof(theLine.substr(0, theFirstElement).c_str());
+				break;
+			default:
+				break;
+			}
+			// delete value from whole string
+			theLine.erase(0, theFirstElement + 1);
+			currentElementCounter += 1; // increase element counter
+		}
+
+		// one line for headers 
+		std::getline(theAIDataFile, theLine);
+		this->convertFromCSVGermanStyle(theLine);
+		theFirstElement = 0;
+		this->vStrTrainingDataColumns.push_back("intentionally left blank");
+		while (theLine.length() > 0)
+		{
+			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
+			else theFirstElement = (int)theLine.length();
+			// read value
+			this->vStrTrainingDataColumns.push_back(theLine.substr(0, theFirstElement));
+			// delete value from whole string
+			theLine.erase(0, theFirstElement + 1);
+		}
+
+		//resize the vector
+		vdLocalVector.clear();
+		vdLocalVector.resize(1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back());
+		this->intLinesRead = 0;
+
+		while (!theAIDataFile.eof())
+		{
+			// now begin to read data values
+			std::getline(theAIDataFile, theLine);
+			++this->intLinesRead;
+			this->convertFromCSVGermanStyle(theLine);
+			// clear vector
+			vdLocalVector.clear();
+			theFirstElement = 0;
+			vdLocalVector.push_back(1.0); // first element is base/threshold value and always set to 1.0
+
+										  // looking for first element
+			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
+			else theFirstElement = (int)theLine.length();
+
+			// clearing data from previous line
+			loadedNumber = "";
+			while ((theFirstElement > 0) && (vdLocalVector.size() < vdLocalVector.capacity())) // cancel if vector already has aincNetwork.NUMINPUTNODES() + aincNetwork.NUMOUTPUTNODES() +1 values
+			{
+				// read value
+				loadedNumber = theLine.substr(0, theFirstElement);
+				// delete value from whole string
+				theLine.erase(0, theFirstElement + 1);
+				vdLocalVector.push_back(strtod(loadedNumber.c_str(), NULL));
+
+				// check for next column
+				if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
+				else theFirstElement = (int)theLine.length();
+			}
+			if (vdLocalVector.size() >= 1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back())
+			{
+				// counting number of lines and copying whole row to vector<vector>
+				this->vvTrainingDataMatrix.push_back(vdLocalVector);
+				iNumberOfLines += 1;
+			}
+			else
+			{
+				// counting false/erronous lines
+				iNumberOfFalseLines += 1;
+			}
+		}
+	}
+
+	this->closeTrainingDataFile(theAIDataFile);
+
+	return iNumberOfFalseLines;
+}
+
+bool AINetDataContainer::openTrainingDataFile(std::ifstream &ptrDataFile)
+{
+	/** This function is used to open the training data file
+	* @param ptrDataFile is a reference to the training data *.csv file.
+	  \returns true if successful.
+		false if failed.
+	*/
+	ptrDataFile.open(this->strAIDataFileName.c_str());
+	if (ptrDataFile.is_open())
+	{
+		// good file is open.
+		return true;
+	}
+	else
+	{
+		std::cerr << "File Could not be opened. FILENAME:" << this->strAIDataFileName.c_str() << "\n";
+		return false;
+	}
+}
+
+size_t AINetDataContainer::loadTrainingData(std::string strFileName, bool bSample)
+{
+	/** This function is used to load training data from an *.csv file
+		\param strFileName is the name of the file to be used.
+		\param bSample If set to true sample data will be used. No data will be loaded.
+	*/
+	size_t retVal=this->intLinesRead;
+	this->strAIDataFileName = strFileName;
+	if (!bSample)
+	{
+		retVal= this->loadTrainingDataFile();
+	}
+	return retVal;
+}
+
+std::string AINetDataContainer::TrainingDataColumnName(size_t tmpColumn, bool shortList)
+{
+	/** This function will return the name of a given TrainingDataColumn
+		\param tmpColumn the column which name is to be returned
+		\param shortList if set to true it will directly access the given column
+	*/
+
+	std::string tmpString;
+	if (!shortList)
+	{
+		// TODO uncomment and repair this function when done set shortlist to false
+		/*// return the Name of the DataColumn
+		std::string tmpString = "no column name";
+		std::vector<unsigned int> retPullList;
+		if (!shortList)
+		{
+			// generate List 
+			if (this->iTimeNumInputColumns == 0)
+			{
+				// repeated inputs
+				retPullList.resize(1 + this->getNumberOfInputNodes() + this->getNumberOfOutputNodes(), 0);
+				for (unsigned int i = 0; i < retPullList.size(); i++)
+				{
+					if (i <= this->iNumRealInputNodes)
+					{
+						retPullList.at(i) = i;
+					}
+					else
+					{
+						retPullList.at(i) = i % this->iNumRealInputNodes + 1;
+					}
+				}
+			}
+			else
+			{
+				// repeated inputs
+				retPullList.resize(1 + this->getNumberOfInputNodes() + this->getNumberOfOutputNodes(), 0);
+				for (unsigned int i = 0; i < retPullList.size(); i++)
+				{
+					if (i <= this->iNumRealInputNodes)
+					{
+						retPullList.at(i) = i;
+					}
+					else
+					{
+						if ((i - this->iNumRealInputNodes) % (this->iTimeNumInputColumns) == 0)
+						{
+							retPullList.at(i) = this->iTimeNumInputColumns;
+						}
+						else
+						{
+							retPullList.at(i) = (i - this->iNumRealInputNodes) % (this->iTimeNumInputColumns);
+						}
+					}
+				}
+			}
+			tmpColumn = retPullList.at(tmpColumn);
+		}*/
+	}
+	else
+	{
+		tmpString = this->vStrTrainingDataColumns.at(std::max((size_t)0, std::min(tmpColumn, vStrTrainingDataColumns.size())));
+	}
+	return tmpString;
 }

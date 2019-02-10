@@ -1,9 +1,8 @@
 #pragma once
+#include <string>
 
-class CodeFromWeb
+namespace CodeFromWeb
 {
-public:
-	CodeFromWeb();
-	~CodeFromWeb();
+	void ReplaceAllStrings(std::string & str, const std::string & from, const std::string & to);
 };
 

@@ -21,6 +21,8 @@
 #include <vector>
 #include <time.h>
 #include <mutex>
+#include <memory>
+#include "CodeFromWeb.h"
 #include "AINetDataContainer.h"
 #include "AINetClass.h"
 
@@ -29,12 +31,7 @@ AINetClass::AINetClass()
 {
 	this->iNumInputNodes = 2;
 	this->iNumOutputNodes = 1;
-	this->ainDataContainer = std::make_shared<AINetDataContainer>(0.0); // this is the initialization of the training data table.
-	this->ainDataContainer->vdNetworkTopology.clear();
-	this->ainDataContainer->vdNetworkTopology.resize(3,1);
-	this->ainDataContainer->vdNetworkTopology.at(0) = this->iNumInputNodes;
-	this->ainDataContainer->vdNetworkTopology.at(1) = 2;
-	this->ainDataContainer->vdNetworkTopology.at(2) = this->iNumOutputNodes;
+	this->ptrAINDataContainer = nullptr;
 	this->iMaxIterations = 100000;
 	this->dlearningRate = 0.2;
 	this->iCounter = 0;
@@ -102,9 +99,9 @@ unsigned int AINetClass::NUMHIDDENNODES()
 {
 	// return number of hidden nodes
 	unsigned int iCalc = 0;
-	for (unsigned int i = 1;i<this->ainDataContainer->vdNetworkTopology.size()-1;i++)
+	for (unsigned int i = 1;i<this->vdNetworkTopology.size()-1;i++)
 	{ 
-		iCalc += this->ainDataContainer->vdNetworkTopology.at(i);
+		iCalc += this->vdNetworkTopology.at(i);
 	}
 	return iCalc;
 }
@@ -179,15 +176,15 @@ unsigned int AINetClass::getNumberOfNodesInLayer(int tmpLayer)
 	unsigned int tmpReturn = 0;
 
 	this->validLayer(tmpLayer);
-	tmpReturn = this->ainDataContainer->vdNetworkTopology.at(max(0, tmpLayer - 1));
+	tmpReturn = this->vdNetworkTopology.at(max(0, tmpLayer - 1));
 	return tmpReturn;
 }
 
 unsigned int AINetClass::getNumberOfLayers(bool bOnlyHidden)
 {
 	// returns the number of layers
-	if (bOnlyHidden) return(unsigned int) this->ainDataContainer->vdNetworkTopology.size()-2;// removing input and output layer
-	else return (unsigned int) this->ainDataContainer->vdNetworkTopology.size();
+	if (bOnlyHidden) return(unsigned int) this->vdNetworkTopology.size()-2;// removing input and output layer
+	else return (unsigned int) this->vdNetworkTopology.size();
 }
 
 unsigned int AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
@@ -208,7 +205,7 @@ unsigned int AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 			if (i < chosenLayer)
 			{
 				// sum all previous layers
-				retInt += this->ainDataContainer->vdNetworkTopology.at(i);
+				retInt += this->vdNetworkTopology.at(i);
 			}
 			else
 			{
@@ -220,7 +217,7 @@ unsigned int AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 				else
 				{
 					// count 
-					retInt += this->ainDataContainer->vdNetworkTopology.at(i);
+					retInt += this->vdNetworkTopology.at(i);
 				}
 				break;
 			}
@@ -239,62 +236,6 @@ size_t AINetClass::TrainingDataColumns()
 {
 	// this one returns the number of columns filled with names
 	return vTrainingDataColumns.size();
-}
-
-std::string AINetClass::TrainingDataColumnName(unsigned int tmpColumn, bool shortList)
-{
-	// return the Name of the DataColumn
-	std::string tmpString="no column name";
-	std::vector<unsigned int> retPullList;
-	if (!shortList)
-	{
-		// generate List 
-		if (this->iTimeNumInputColumns == 0)
-		{
-			// repeated inputs
-			retPullList.resize(1 + this->getNumberOfInputNodes() + this->getNumberOfOutputNodes(),0);
-			for (unsigned int i = 0; i < retPullList.size(); i++)
-			{
-				if (i <= this->iNumRealInputNodes)
-				{
-					retPullList.at(i) = i;
-				}
-				else
-				{
-					retPullList.at(i) = i % this->iNumRealInputNodes+1;
-				}
-			}
-		}
-		else
-		{
-			// repeated inputs
-			retPullList.resize(1 + this->getNumberOfInputNodes() + this->getNumberOfOutputNodes(),0);
-			for (unsigned int i = 0; i < retPullList.size(); i++)
-			{
-				if (i <= this->iNumRealInputNodes)
-				{
-					retPullList.at(i) = i;
-				}
-				else
-				{
-					if ((i - this->iNumRealInputNodes) % (this->iTimeNumInputColumns) == 0)
-					{
-						retPullList.at(i) = this->iTimeNumInputColumns;
-					}
-					else
-					{
-						retPullList.at(i) = (i - this->iNumRealInputNodes) % (this->iTimeNumInputColumns);
-					}
-				}
-			}
-		}
-		tmpColumn = retPullList.at(tmpColumn);
-	}
-	if ((tmpColumn < vTrainingDataColumns.size()) && (tmpColumn >= 0))
-	{
-		tmpString = vTrainingDataColumns.at(tmpColumn);
-	}
-	return tmpString;
 }
 
 unsigned int AINetClass::getTrainingDataRowsMax()
@@ -316,8 +257,8 @@ unsigned int AINetClass::getMaximumNodesLayer(bool bGetMaximumNodes)
 	unsigned int retLayer = 0;
 	for (unsigned int currentLayer = 0; currentLayer < this->getNumberOfLayers();currentLayer++)
 	{
-		retValue = max(retValue, this->ainDataContainer->vdNetworkTopology.at(currentLayer));
-		if (retValue == this->ainDataContainer->vdNetworkTopology.at(currentLayer))
+		retValue = max(retValue, this->vdNetworkTopology.at(currentLayer));
+		if (retValue == this->vdNetworkTopology.at(currentLayer))
 		{
 			retLayer = currentLayer+1;
 		}
@@ -334,9 +275,9 @@ unsigned int AINetClass::getLayerByNode(unsigned int iTmpNode)
 	// this function returns the corresponding layer for a specific node
 	unsigned int returnLayer = 0;
 	unsigned int LayerBegin = 1;
-	for (unsigned int i = 0; i < this->ainDataContainer->vdNetworkTopology.size(); i++)
+	for (unsigned int i = 0; i < this->vdNetworkTopology.size(); i++)
 	{
-		if ((LayerBegin <= iTmpNode) && (iTmpNode < LayerBegin + this->ainDataContainer->vdNetworkTopology.at(i)))
+		if ((LayerBegin <= iTmpNode) && (iTmpNode < LayerBegin + this->vdNetworkTopology.at(i)))
 		{
 			// this is the correct layer
 			returnLayer = i;
@@ -344,7 +285,7 @@ unsigned int AINetClass::getLayerByNode(unsigned int iTmpNode)
 		}
 		else
 		{
-			LayerBegin += this->ainDataContainer->vdNetworkTopology.at(i);
+			LayerBegin += this->vdNetworkTopology.at(i);
 		}
 	}
 	return returnLayer;
@@ -372,10 +313,20 @@ bool AINetClass::IsTrainingRestart()
 
 bool AINetClass::IsLastLayer(unsigned int tmpLayer)
 {
-	if (tmpLayer == this->ainDataContainer->vdNetworkTopology.size())
+	if (tmpLayer == this->vdNetworkTopology.size())
 		return true;
 	else
 		return false;
+}
+
+bool AINetClass::linkTrainingDataContainer(std::shared_ptr<AINetDataContainer> ptrToContainer)
+{
+	/** This function is used to link the training data class to this network
+		\param ptrToContainer this is a shared pointer to a container of training data.
+		\return always true.
+	*/
+	this->ptrAINDataContainer = std::shared_ptr<AINetDataContainer>(ptrToContainer);
+	return true;
 }
 
 bool AINetClass::getOptionStatus()
@@ -389,7 +340,7 @@ bool AINetClass::setNumInputNodes(unsigned int tmpInputNodes)
 	// set the number of input nodes
 	this->initializationDone = false;		// significant changes to network, so initialization should be renewed
 	this->iNumInputNodes = min(max(1, tmpInputNodes), UINT_MAX);
-	this->ainDataContainer->vdNetworkTopology.at(0) = this->iNumInputNodes;
+	this->vdNetworkTopology.at(0) = this->iNumInputNodes;
 	this->iNumRealInputNodes = this->iNumInputNodes;
 	this->resizeVectors();
 	return (iNumInputNodes == tmpInputNodes);
@@ -400,7 +351,7 @@ bool AINetClass::setNumOutputNodes(unsigned int tmpOutputNodes)
 	// set the number of output nodes
 	this->initializationDone = false;		// significant changes to network, so initialization should be renewed
 	this->iNumOutputNodes = min(max(1, tmpOutputNodes), UINT_MAX);
-	this->ainDataContainer->vdNetworkTopology.at(this->ainDataContainer->vdNetworkTopology.size() - 1) = this->iNumOutputNodes;
+	this->vdNetworkTopology.at(this->vdNetworkTopology.size() - 1) = this->iNumOutputNodes;
 	return (iNumOutputNodes == tmpOutputNodes);
 }
 
@@ -487,13 +438,13 @@ bool AINetClass::setNumberOfHiddenLayers(unsigned int tmpHiddenLayers, unsigned 
 	{
 		tmpHiddenLayers = 1;
 	}
-	this->ainDataContainer->vdNetworkTopology.resize(max(2, tmpHiddenLayers + 2), max(1,tmpNodesinHiddenLayer));
+	this->vdNetworkTopology.resize(max(2, tmpHiddenLayers + 2), max(1,tmpNodesinHiddenLayer));
 	this->viLayerActivationFunction.resize(max(2, tmpHiddenLayers + 2), 0);
 	// set number of input nodes
-	this->ainDataContainer->vdNetworkTopology.at(0) = this->iNumInputNodes;
+	this->vdNetworkTopology.at(0) = this->iNumInputNodes;
 	// set number of output nodes
-	this->ainDataContainer->vdNetworkTopology.at(this->ainDataContainer->vdNetworkTopology.size() - 1) = this->iNumOutputNodes;
-	return (this->ainDataContainer->vdNetworkTopology.capacity() == tmpHiddenLayers + 2);
+	this->vdNetworkTopology.at(this->vdNetworkTopology.size() - 1) = this->iNumOutputNodes;
+	return (this->vdNetworkTopology.capacity() == tmpHiddenLayers + 2);
 }
 
 bool AINetClass::setNumberOfNodesinLayer(int tmpLayer, unsigned int tmpNumberOfNodes)
@@ -501,7 +452,7 @@ bool AINetClass::setNumberOfNodesinLayer(int tmpLayer, unsigned int tmpNumberOfN
 	bool tmpReturn = false;
 	this->validLayer(tmpLayer);
 	// tmpLayer is in valid range
-	this->ainDataContainer->vdNetworkTopology.at(max(0, tmpLayer - 1)) = max(1, tmpNumberOfNodes);
+	this->vdNetworkTopology.at(max(0, tmpLayer - 1)) = max(1, tmpNumberOfNodes);
 	return true;
 }
 
@@ -518,8 +469,10 @@ void AINetClass::TrainingDataColumnPush_Back(std::string tmpString)
 
 std::vector<std::vector<double>> *AINetClass::getTrainingData()
 {
-	/* this returns pointer to the training data matrix */
-	return &this->ainDataContainer->vvTrainingDataMatrix;
+	/** This is a wrapper function and returns a pointer to the training data matrix. 
+		\return a pointer to the training data matrix
+	*/
+	return this->ptrAINDataContainer->ptrTrainingDataMatix();
 }
 
 void AINetClass::shuffleTrainingData()
@@ -579,9 +532,6 @@ void AINetClass::setOptionDisplayAllNodes(bool bDisplayAll)
 
 size_t AINetClass::loadTrainingDataFile()
 {
-	/**
-
-	*/
 	std::string theLine = "no open file.";
 	int theFirstElement = 0;
 	unsigned int iNumberOfLines = 0;
@@ -589,11 +539,9 @@ size_t AINetClass::loadTrainingDataFile()
 	int iTimePreviousElements = 0;	// How many previous rows for calculation?
 
 	std::ifstream theAIDataFile;
-
-	this->openTrainingDataFile(theAIDataFile);
-
-	// clear old training data
-	this->ainDataContainer->vvTrainingDataMatrix.clear();
+	
+	this->ptrAINDataContainer->setTrainingDataFileName(this->strAIDataFileName);
+	this->ptrAINDataContainer->openTrainingDataFile(theAIDataFile);
 	
 	// clear errors
 	this->vvErrors.clear();
@@ -712,7 +660,9 @@ size_t AINetClass::loadTrainingDataFile()
 			if (vdLocalVector.size() >= 1 + this->iNumRealInputNodes + this->NUMOUTPUTNODES())
 			{
 				// counting number of lines and copying whole row to vector<vector>
-				this->ainDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
+				
+				
+				//TODO DELETE this->ainLocalDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
 				this->vvErrors.push_back(vdOutputDummy);
 				iNumberOfLines += 1;
 			}
@@ -725,62 +675,9 @@ size_t AINetClass::loadTrainingDataFile()
 		this->setTrainingDataRowsMax(iNumberOfLines);
 	}
 
-	this->closeTrainingDataFile(theAIDataFile);
+	this->ptrAINDataContainer->closeTrainingDataFile(theAIDataFile);
 
 	return iNumberOfFalseLines;
-}
-
-void AINetClass::setTrainingDataSample()
-{
-	// Setting the sample Training Data set.
-
-	this->setNumInputNodes(2);
-	this->setNumOutputNodes(1);
-
-	std::vector<double> vdLocalVector(1 + this->NUMREALINPUTNODES() + this->NUMOUTPUTNODES());
-
-	// clear vectors
-	vdLocalVector.clear();
-	this->ainDataContainer->vvTrainingDataMatrix.clear();
-	this->vvErrors.clear();
-
-	// resize local vector
-	//vdLocalVector.resize(this->NUMREALINPUTNODES() + this->NUMOUTPUTNODES());
-
-	// begin filling data
-	vdLocalVector.push_back(1.0); // the first element is always 1
-	vdLocalVector.push_back(1.0);
-	vdLocalVector.push_back(1.0);
-	vdLocalVector.push_back(0.0);
-
-	this->ainDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
-
-	vdLocalVector.clear();
-	vdLocalVector.push_back(1.0); // the first element is always 1
-	vdLocalVector.push_back(1.0);
-	vdLocalVector.push_back(0.0);
-	vdLocalVector.push_back(1.0);
-
-	this->ainDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
-
-	vdLocalVector.clear();
-	vdLocalVector.push_back(1.0); // the first element is always 1
-	vdLocalVector.push_back(0.0);
-	vdLocalVector.push_back(1.0);
-	vdLocalVector.push_back(1.0);
-
-	this->ainDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
-
-	vdLocalVector.clear();
-	vdLocalVector.push_back(1.0); // the first element is always 1
-	vdLocalVector.push_back(0.0);
-	vdLocalVector.push_back(0.0);
-	vdLocalVector.push_back(1.0);
-	
-	this->ainDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
-	this->vvErrors = this->ainDataContainer->vvTrainingDataMatrix;
-
-	this->setTrainingDataRowsMax(4);
 }
 
 void AINetClass::setOptionShuffle(bool bSetShuffle)
@@ -955,6 +852,10 @@ void AINetClass::initialize()
 	this->vecThresholds.reserve(tmpTotalNumberNodes);
 	this->vecExpectedValues.clear();
 	this->vecExpectedValues.reserve(tmpTotalNumberNodes);
+	this->vvErrors.clear();
+	this->vvErrors.resize(this->ptrAINDataContainer->getNumberOfOutputNodes(), { 0.0 });
+	this->vdNetworkTopology = this->ptrAINDataContainer->getNetworkTopology();
+
 	for (unsigned int i = 0; i <= tmpTotalNumberNodes; i++)
 	{
 		// even if vector <int> [0] is defined. it is not to be used.
@@ -970,24 +871,6 @@ void AINetClass::initialize()
 		this->vecWeights.push_back(tmpRow);
 	}
 	this->initializationDone = true;
-}
-
-bool AINetClass::openTrainingDataFile(std::ifstream &ptrDataFile)
-{
-	// open training data file for reading training data
-	ptrDataFile.open(this->strAIDataFileName.c_str());
-	if (ptrDataFile.is_open())
-	{
-		// good file is open.
-		return true;
-	}
-	else
-	{
-		OutputDebugStringA("File Could not be opened. FILENAME:");
-		OutputDebugStringA(this->strAIDataFileName.c_str());
-		OutputDebugStringA("\n");
-		return false;
-	}
 }
 
 void AINetClass::saveResultingNetwork(unsigned int iNumber)
@@ -1052,7 +935,7 @@ void AINetClass::saveResultingNetwork(unsigned int iNumber)
 					if (iLayer == 0)
 					{
 						// write name column
-						strFileContents = this->TrainingDataColumnName((unsigned int)iNode) + ",";
+						strFileContents = this->ptrAINDataContainer->TrainingDataColumnName((unsigned int)iNode) + ",";
 					}
 					else if (iLayer == 1)
 					{
@@ -1107,22 +990,22 @@ void AINetClass::saveResultingNetwork(unsigned int iNumber)
 
 		// write the training data to file
 		tmpFileContents = "-- training data begin -- \nRow,";
-		for (unsigned int iRow = 1; iRow < this->ainDataContainer->vvTrainingDataMatrix.at(0).size(); iRow++)
+		for (unsigned int iRow = 1; iRow < this->ptrAINDataContainer->getTrainingDataColumnsMax(); iRow++)
 		{
-			tmpFileContents = tmpFileContents + this->TrainingDataColumnName(iRow) + ",";
+			tmpFileContents = tmpFileContents + this->ptrAINDataContainer->TrainingDataColumnName(iRow) + ",";
 		}
 		for (unsigned int iRow = 0; iRow<vvErrors.at(0).size(); iRow++)
 		{
 			tmpFileContents = tmpFileContents + "Error_" + std::to_string(iRow+1) + ",";
 		}
 		tmpFileContents = tmpFileContents + "\n";
-		for (unsigned int iLine = 0; iLine < this->ainDataContainer->vvTrainingDataMatrix.size(); iLine++)
+		for (unsigned int iLine = 0; iLine < this->ptrAINDataContainer->getTrainingDataRowsMax(); iLine++)
 		{
 			tmpFileContents = tmpFileContents + std::to_string(iLine)+",";
 			// write training data
-			for(unsigned int iRow=1; iRow< this->ainDataContainer->vvTrainingDataMatrix.at(iLine).size(); iRow++)
+			for(unsigned int iRow=1; iRow< this->ptrAINDataContainer->getTrainingRowSizeT(iRow); iRow++)
 			{
-				tmpFileContents = tmpFileContents + std::to_string(this->ainDataContainer->vvTrainingDataMatrix.at(iLine).at(iRow) )+ ",";
+				tmpFileContents = tmpFileContents + std::to_string(this->ptrAINDataContainer->getTrainingDataValue(iRow,iLine))+ ",";
 			}
 			// write errors
 			for (unsigned int iRow = 0; iRow<vvErrors.at(iLine).size(); iRow++)
@@ -1221,7 +1104,7 @@ void AINetClass::connectNodes(bool bFullyConnected, unsigned int iRandSeed)
 				for (unsigned int y = this->NUMINPUTNODES() + 1; tmpTotalNumberNodes; y++)
 				{
 					// generate node connections for all valid weights
-					// next line is correct, but if wont work becuse ainDataContainer->vdNetworkTopology does not represent the network w/ historic data
+					// next line is correct, but if wont work becuse vdNetworkTopology does not represent the network w/ historic data
 					if (this->getLayerByNode(x) == this->getLayerByNode(y) - 1)
 					{
 						// node y is element of layer after node x
@@ -1239,20 +1122,6 @@ void AINetClass::connectNodes(bool bFullyConnected, unsigned int iRandSeed)
 	else
 	{
 		this->throwFailure("network not properly initialized",true);
-	}
-}
-
-void AINetClass::closeTrainingDataFile(std::ifstream &ptrDataFile)
-{
-	// closes training data file
-	if (ptrDataFile.is_open())
-	{
-		// good, file is open.
-		ptrDataFile.close();
-	}
-	else
-	{
-		this->throwFailure("File could not be closed", false);
 	}
 }
 
@@ -1331,7 +1200,7 @@ void AINetClass::trainLine()
 
 	for (unsigned int i = 0; i <= this->iNumRealInputNodes; i++)
 	{
-		this->vecValues[i] = this->ainDataContainer->vvTrainingDataMatrix.at(tmpCurrentRow).at(i) + this->dInputOffset;
+		this->vecValues[i] = this->ptrAINDataContainer->getTrainingDataValue(i,tmpCurrentRow) + this->dInputOffset;
 	}
 
 	// now adding historic data for the input
@@ -1416,7 +1285,7 @@ void AINetClass::printIO(double sumOfSquaredErrors)
 			{
 				if (this->TrainingDataColumns() >= i)
 				{
-					printf("%s|", this->TrainingDataColumnName(i).c_str());
+					printf("%s|", this->ptrAINDataContainer->TrainingDataColumnName(i).c_str());
 				}
 			}
 			printf("\n");
@@ -1667,7 +1536,7 @@ bool AINetClass::autoGenerateInternalNetwork()
 	// generating internal network 
 	unsigned int iAutoInput = this->NUMINPUTNODES();
 	unsigned int iAutoOutput = this->NUMOUTPUTNODES();
-	unsigned int iAutoLayer = (unsigned int)this->ainDataContainer->vdNetworkTopology.capacity();
+	unsigned int iAutoLayer = (unsigned int)this->vdNetworkTopology.capacity();
 	double iAutoResult = 1;
 	if (this->bOptionAutoGenerate)
 	{
@@ -1691,11 +1560,11 @@ double AINetClass::getTrainingDataValue(unsigned int row, unsigned int column)
 {
 	// safeAccesstoTrainingData
 	double tmpReturn=0;
-	if (row < this->ainDataContainer->vvTrainingDataMatrix.size())
+	if (row < this->ptrAINDataContainer->getTrainingDataRowsMax())
 	{
-		if (column < this->ainDataContainer->vvTrainingDataMatrix[row].size())
+		if (column < this->ptrAINDataContainer->getTrainingRowSizeT(row))
 		{
-			tmpReturn= this->ainDataContainer->vvTrainingDataMatrix[row][column];
+			tmpReturn= this->ptrAINDataContainer->getTrainingDataValue(column,row);
 		}
 		else
 		{
@@ -1771,38 +1640,22 @@ double AINetClass::updateWeightsInLayer(int tmpLayer)
 	return(sumOfSquaredError / max(n, 1));
 }
 
-inline void AINetClass::ReplaceAllStrings(std::string & str, const std::string & from, const std::string & to)
-{
-	size_t	start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length(); //Handles case where 'to' is  a substring of 'from'
-	}
-	//return str;
-}
 
 unsigned int AINetClass::getNumberOfInputNodes()
 {
-	if (this->ainDataContainer->vdNetworkTopology.size() > 0)
-	{
-		return this->ainDataContainer->vdNetworkTopology.at(0);
-	}
-	else
-	{
-		return this->iNumInputNodes;
-	}
+	/** This function is a wrapper function to the training data container
+		\return returns the number of input nodes.
+	*/
+
+	return this->ptrAINDataContainer->getNumberOfInputNodes();
 }
 
 unsigned int AINetClass::getNumberOfOutputNodes()
 {
-	if (this->ainDataContainer->vdNetworkTopology.size() > 0)
-	{
-		return this->ainDataContainer->vdNetworkTopology.at(this->ainDataContainer->vdNetworkTopology.size()-1);
-	}
-	else
-	{
-		return this->iNumOutputNodes;
-	}
+	/** This function is a wrapper function to the training data container
+		\return returns the number of output nodes.
+	*/
+	return this->ptrAINDataContainer->getNumberOfOutputNodes();
 }
 
 std::string AINetClass::generateFileOutput(std::string& strFileContents)
@@ -1810,8 +1663,8 @@ std::string AINetClass::generateFileOutput(std::string& strFileContents)
 	// convert data to suitable format
 	if (this->bOptionCSVGER)
 	{
-		ReplaceAllStrings(strFileContents, ",", ";");
-		ReplaceAllStrings(strFileContents, ".", ",");
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ",", ";");
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ".", ",");
 	}
 	return strFileContents;
 }
@@ -1821,8 +1674,8 @@ std::string AINetClass::generateFileInput(std::string & strFileContents)
 	// convert data to suitable format
 	if (this->bOptionCSVGER)
 	{
-		ReplaceAllStrings(strFileContents, ",", ".");
-		ReplaceAllStrings(strFileContents, ";", ",");
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ",", ".");
+		CodeFromWeb::ReplaceAllStrings(strFileContents, ";", ",");
 	}
 	return strFileContents;
 }
@@ -1885,10 +1738,10 @@ unsigned int AINetClass::resizeVectors()
 	{
 		tmpInputVectorSize += this->iNumRealInputNodes + this->iTimeNumInputColumns * abs(this->iTimePreviousRows);
 	}
-	this->ainDataContainer->vdNetworkTopology.at(0) = tmpInputVectorSize;
-	for (unsigned int i = 1; i < ainDataContainer->vdNetworkTopology.size(); i++)
+	this->vdNetworkTopology.at(0) = tmpInputVectorSize;
+	for (unsigned int i = 1; i < vdNetworkTopology.size(); i++)
 	{
-		tmpInputVectorSize += ainDataContainer->vdNetworkTopology.at(i);
+		tmpInputVectorSize += vdNetworkTopology.at(i);
 	}
 	
 	this->initialize();
@@ -1898,18 +1751,18 @@ unsigned int AINetClass::resizeVectors()
 
 int AINetClass::validLayer(int & tmpLayer, bool tmpRemoveOffset)
 {
-	// returning a valid layer between 1 and ainDataContainer->vdNetworkTopology.size()
+	// returning a valid layer between 1 and vdNetworkTopology.size()
 	if (tmpLayer < 0)
 	{
 		// first of all, make it positive.
 		// if tmpLayer is negative, it is counted from the last layer in the network
-		// due to the fact that it has to be -1 or smaler, this->ainDataContainer->vdNetworkTopology.size() is always substractet at least 1 element which is added so -1 refers to last layer.
-		tmpLayer = max(1, (int) this->ainDataContainer->vdNetworkTopology.size() + 1 + tmpLayer);
+		// due to the fact that it has to be -1 or smaler, this->vdNetworkTopology.size() is always substractet at least 1 element which is added so -1 refers to last layer.
+		tmpLayer = max(1, (int) this->vdNetworkTopology.size() + 1 + tmpLayer);
 	}
 	else if (tmpLayer > 0)
 	{
 		// great it is greater than 0, so the first (aka input layer ist 1)
-		tmpLayer = min((int) this->ainDataContainer->vdNetworkTopology.size(), tmpLayer);
+		tmpLayer = min((int) this->vdNetworkTopology.size(), tmpLayer);
 	}
 	else
 	{
@@ -1988,7 +1841,7 @@ std::string AINetClass::NodeFunctionXLS(unsigned int tmpNode, std::string tmpCal
 		break;
 	}
 
-	ReplaceAllStrings(myActivationFunction, "%d", tmpCalculatedInput);
+	CodeFromWeb::ReplaceAllStrings(myActivationFunction, "%d", tmpCalculatedInput);
 	//ReplaceAllStrings(myActivationFunction, "--", "");
 
 	return myActivationFunction;
