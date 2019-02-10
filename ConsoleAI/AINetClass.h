@@ -2,7 +2,7 @@
 
 #include <memory>
 #include "CodeFromWeb.h"
-#include "AINetDataContainer.h"
+#include "AINetTrainingData.h"
 
 
 class AINetClass
@@ -15,7 +15,7 @@ public:
 	~AINetClass();
 
 	//AINetClass(const AINetClass &oldClass); 
-	unsigned int NUMNODES();
+	size_t NUMNODES();
 	unsigned int NUMINPUTNODES();
 	unsigned int NUMREALINPUTNODES();
 	unsigned int NUMOUTPUTNODES();
@@ -38,7 +38,7 @@ public:
 	bool continueCalculation();
 	bool IsTrainingRestart();
 	bool IsLastLayer(unsigned int tmpLayer);
-	bool linkTrainingDataContainer(std::shared_ptr<AINetDataContainer> ptrToContainer);
+	bool linkTrainingDataContainer(std::shared_ptr<AINetTrainingData> ptrToContainer);
 	bool getOptionStatus();
 	bool setNumInputNodes(unsigned int tmpInputNodes);
 	bool setNumOutputNodes(unsigned int tmpOutputNodes);
@@ -162,7 +162,7 @@ private:
 	std::vector<std::string> errorList = { "0" };
 	std::vector<std::vector<double>> vvErrors={ {0.0} };
 	std::vector<std::string> vstrResultFilenames = { "" };
-	std::shared_ptr<AINetDataContainer> ptrAINDataContainer = nullptr;
+	std::shared_ptr<AINetTrainingData> ptrAINDataContainer = nullptr;
 	
 	// functions
 	std::string generateFileOutput(std::string& strFileContents);

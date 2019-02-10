@@ -24,10 +24,10 @@
     <ClInclude Include="CodeFromWeb.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="AINetDataContainer.h">
+    <ClInclude Include="stdafx.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
+    <ClInclude Include="AINetTrainingData.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClCompile Include="CodeFromWeb.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="AINetDataContainer.cpp">
+    <ClCompile Include="AINetTrainingData.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,11 +1,11 @@
 #pragma once
 #include "CodeFromWeb.h"
 
-class AINetDataContainer
+class AINetTrainingData
 {
 public:
-	AINetDataContainer();
-	~AINetDataContainer();
+	AINetTrainingData();
+	~AINetTrainingData();
 
 	
 	size_t getTrainingDataRowsMax();

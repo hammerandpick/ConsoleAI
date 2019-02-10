@@ -36,6 +36,9 @@
     <ClInclude Include="..\ConsoleAI\CodeFromWeb.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\ConsoleAI\AINetTrainingData.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +54,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\ConsoleAI\CodeFromWeb.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ConsoleAI\AINetTrainingData.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

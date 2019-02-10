@@ -23,7 +23,7 @@
 #include <mutex>
 #include <memory>
 #include "CodeFromWeb.h"
-#include "AINetDataContainer.h"
+#include "AINetTrainingData.h"
 #include "AINetClass.h"
 
 
@@ -64,34 +64,37 @@ AINetClass::~AINetClass()
 	this->vecCalcDelta.clear();
 }
 
-unsigned int AINetClass::NUMNODES()
+size_t AINetClass::NUMNODES()
 {
-	// returns number of nodes
-	unsigned int totalNumberNodes = 0;
-	totalNumberNodes += this->NUMINPUTNODES();
-	for (unsigned int currentLayer = 2; currentLayer <= 1 + this->getNumberOfLayers(true); currentLayer++)
+	/** This function returns the number of nodes of the network.
+		\return number of nodes.
+	*/
+	size_t totalNumberNodes = 0;
+	for (size_t currentLayer = 0; currentLayer < this->vdNetworkTopology.size(); currentLayer++)
 	{
-		totalNumberNodes += this->getNumberOfNodesInLayer(currentLayer);
+		totalNumberNodes += this->vdNetworkTopology.at(currentLayer);
 	}
-	totalNumberNodes += this->NUMOUTPUTNODES();
 	return totalNumberNodes;
 }
 
 unsigned int AINetClass::NUMINPUTNODES()
 {
-	//returns number of input nodes
+	/** This is a wrapper function.
+	*/
 	return this->getNumberOfInputNodes();
 }
 
 unsigned int AINetClass::NUMREALINPUTNODES()
 {
-	//returns number of real input nodes;
+	/** This is a wrapper function.
+	*/
 	return this->iNumRealInputNodes;
 }
 
 unsigned int AINetClass::NUMOUTPUTNODES()
 {
-	// returns number of output nodes
+	/** This is a wrapper function.
+	*/
 	return this->getNumberOfOutputNodes();
 }
 
@@ -319,13 +322,13 @@ bool AINetClass::IsLastLayer(unsigned int tmpLayer)
 		return false;
 }
 
-bool AINetClass::linkTrainingDataContainer(std::shared_ptr<AINetDataContainer> ptrToContainer)
+bool AINetClass::linkTrainingDataContainer(std::shared_ptr<AINetTrainingData> ptrToContainer)
 {
 	/** This function is used to link the training data class to this network
 		\param ptrToContainer this is a shared pointer to a container of training data.
 		\return always true.
 	*/
-	this->ptrAINDataContainer = std::shared_ptr<AINetDataContainer>(ptrToContainer);
+	this->ptrAINDataContainer = std::shared_ptr<AINetTrainingData>(ptrToContainer);
 	return true;
 }
 
@@ -477,7 +480,8 @@ std::vector<std::vector<double>> *AINetClass::getTrainingData()
 
 void AINetClass::shuffleTrainingData()
 {
-	// shuffling Training Data
+	/** This function is used to shuffle the vector containing numeric references to rows of the training data set.
+	*/
 	std::random_shuffle(this->inputDataPullList.begin(), this->inputDataPullList.end());
 }
 
@@ -839,8 +843,12 @@ void AINetClass::sortNetwork()
 
 void AINetClass::initialize()
 {
-	// this inititalizes the network with previously defined parameters
-	unsigned int tmpTotalNumberNodes = this->NUMNODES();
+	/** This initializes the network. Topology is been loaded from training data.
+	*/
+
+	// first of all the network topology has to be clear.
+	this->vdNetworkTopology = this->ptrAINDataContainer->getNetworkTopology();
+	size_t tmpTotalNumberNodes = this->NUMNODES();
 
 	this->vecValues.clear();
 	this->vecValues.reserve(tmpTotalNumberNodes);
@@ -854,7 +862,7 @@ void AINetClass::initialize()
 	this->vecExpectedValues.reserve(tmpTotalNumberNodes);
 	this->vvErrors.clear();
 	this->vvErrors.resize(this->ptrAINDataContainer->getNumberOfOutputNodes(), { 0.0 });
-	this->vdNetworkTopology = this->ptrAINDataContainer->getNetworkTopology();
+	
 
 	for (unsigned int i = 0; i <= tmpTotalNumberNodes; i++)
 	{

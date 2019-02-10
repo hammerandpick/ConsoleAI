@@ -6,27 +6,27 @@
 #include <fstream>
 #include <string>
 #include "CodeFromWeb.h"
-#include "AINetDataContainer.h"
+#include "AINetTrainingData.h"
 
 
-AINetDataContainer::AINetDataContainer()
+AINetTrainingData::AINetTrainingData()
 {
-	/** Constructor for AINetDataContainer
-	  * \relates AINetDataContainer(double tdm)
+	/** Constructor for AINetTrainingData
+	  * \relates AINetTrainingData(double tdm)
 	*/
 
 	this->vvTrainingDataMatrix = { {1.0,0.0,0.0,1.0},{1.0,0.0,1.0,0.0},{1.0,1.0,0.0,0.0},{1.0,1.0,1.0,0.0} }; // standard xor training data
 	this->vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
 }
 
-AINetDataContainer::~AINetDataContainer()
+AINetTrainingData::~AINetTrainingData()
 {
 	this->vvTrainingDataMatrix.clear();
 	this->vdNetworkTopology.clear();
 }
 
 
-size_t AINetDataContainer::getTrainingDataRowsMax()
+size_t AINetTrainingData::getTrainingDataRowsMax()
 {
 	/** This function returns the maximum number of training data rows. It calculates the maximum number of rows from the file reduced by the number of previous and next rows when using a time sceme.
 		\return the maximum number of training data rows.
@@ -34,7 +34,7 @@ size_t AINetDataContainer::getTrainingDataRowsMax()
 	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows - (size_t)this->intTimePreviousRows;
 }
 
-size_t AINetDataContainer::getTrainingDataColumnsMax()
+size_t AINetTrainingData::getTrainingDataColumnsMax()
 {
 	/** This function returns the number of columns in training data.
 		\retun The number of columns in training data.
@@ -42,26 +42,26 @@ size_t AINetDataContainer::getTrainingDataColumnsMax()
 	return this->vvTrainingDataMatrix.size();
 }
 
-size_t AINetDataContainer::getTrainingDataBegin()
+size_t AINetTrainingData::getTrainingDataBegin()
 {
 	/** This function is used to calculate the start of the training data. It will skip the number of defined previous rows, which will be used in calculation. Data has to be in ascending order.
 	*/
 	return (size_t)this->intTimePreviousRows;
 }
 
-size_t AINetDataContainer::getTrainingDataEnd()
+size_t AINetTrainingData::getTrainingDataEnd()
 {
 	/** This function is used to calculate the end of the training data. It will skip the number of defined next rows, which will be used in calculation. Data has to be in ascending order.
 	*/
 	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows;
 }
 
-size_t AINetDataContainer::getTotalLines()
+size_t AINetTrainingData::getTotalLines()
 {
 	return this->intLinesRead;
 }
 
-size_t AINetDataContainer::getNumberOfInputNodes()
+size_t AINetTrainingData::getNumberOfInputNodes()
 {
 	/** This returns the number of input nodes from the network topology
 		\return Number of input nodes.	
@@ -69,7 +69,7 @@ size_t AINetDataContainer::getNumberOfInputNodes()
 	return this->vdNetworkTopology.front();
 }
 
-size_t AINetDataContainer::getNumberOfOutputNodes()
+size_t AINetTrainingData::getNumberOfOutputNodes()
 {
 	/** This function returns the number of output nodes from network topology of training data file
 		\return The number of output nodes.
@@ -77,7 +77,7 @@ size_t AINetDataContainer::getNumberOfOutputNodes()
 	return this->vdNetworkTopology.back();
 }
 
-double AINetDataContainer::getTrainingDataValue(size_t column, size_t row)
+double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 {
 	/** This function returns the value of the training data in \p colum of \p row.
 		\param colum The colum to be returned.
@@ -103,7 +103,7 @@ double AINetDataContainer::getTrainingDataValue(size_t column, size_t row)
 	return dReturn;
 }
 
-size_t AINetDataContainer::getTrainingRowSizeT(size_t row)
+size_t AINetTrainingData::getTrainingRowSizeT(size_t row)
 {
 	/** This will return the size of the specified \p row.
 		\param row The row of interest.
@@ -118,7 +118,7 @@ size_t AINetDataContainer::getTrainingRowSizeT(size_t row)
 	return intReturn;
 }
 
-std::vector<size_t> AINetDataContainer::getNetworkTopology()
+std::vector<size_t> AINetTrainingData::getNetworkTopology()
 {
 	/** This function will return the topology from training data file.
 		\return The topology of the network from training data file.
@@ -126,7 +126,7 @@ std::vector<size_t> AINetDataContainer::getNetworkTopology()
 	return this->vdNetworkTopology;
 }
 
-std::vector<std::vector<double>> AINetDataContainer::getTrainingDataMatrix()
+std::vector<std::vector<double>> AINetTrainingData::getTrainingDataMatrix()
 {
 	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
 		\return a new training data object.
@@ -134,7 +134,7 @@ std::vector<std::vector<double>> AINetDataContainer::getTrainingDataMatrix()
 	return this->vvTrainingDataMatrix;
 }
 
-std::vector<std::vector<double>>* AINetDataContainer::ptrTrainingDataMatix()
+std::vector<std::vector<double>>* AINetTrainingData::ptrTrainingDataMatix()
 {
 	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
 		\return a new training data object.
@@ -142,7 +142,7 @@ std::vector<std::vector<double>>* AINetDataContainer::ptrTrainingDataMatix()
 	return &this->vvTrainingDataMatrix;
 }
 
-std::string AINetDataContainer::getTrainingDataFileName()
+std::string AINetTrainingData::getTrainingDataFileName()
 {
 	/** This will return the file name of the training data file.
 		\return String of file name.
@@ -150,7 +150,7 @@ std::string AINetDataContainer::getTrainingDataFileName()
 	return this->strAIDataFileName;
 }
 
-std::string AINetDataContainer::setTrainingDataFileName(std::string strFileName)
+std::string AINetTrainingData::setTrainingDataFileName(std::string strFileName)
 {
 	/** This will set the file name of the training data file. 
 		\return String of file name.
@@ -160,7 +160,7 @@ std::string AINetDataContainer::setTrainingDataFileName(std::string strFileName)
 	return this->strAIDataFileName;
 }
 
-bool AINetDataContainer::setOptionCSVGermanStyle(bool bGerStyle)
+bool AINetTrainingData::setOptionCSVGermanStyle(bool bGerStyle)
 {
 	/** This is used to set the option to convert a german style *.csv into a standard *.csv 
 		\param bGerStyle if a german csv file is to be loaded this has to be set to true
@@ -170,7 +170,7 @@ bool AINetDataContainer::setOptionCSVGermanStyle(bool bGerStyle)
 	return this->bOptionCSVGER;
 }
 
-bool AINetDataContainer::setPreferredNetworkTopology(std::string strPref)
+bool AINetTrainingData::setPreferredNetworkTopology(std::string strPref)
 {
 	/** this function is used to set the prefered network topology
 		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
@@ -199,7 +199,7 @@ bool AINetDataContainer::setPreferredNetworkTopology(std::string strPref)
 	return false;
 }
 
-bool AINetDataContainer::setPreferredNetworkTopology(std::vector<size_t> vsPref)
+bool AINetTrainingData::setPreferredNetworkTopology(std::vector<size_t> vsPref)
 {
 	/** this function is used to set the prefered network topology
 		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
@@ -209,7 +209,7 @@ bool AINetDataContainer::setPreferredNetworkTopology(std::vector<size_t> vsPref)
 	return (this->vdNetworkTopology == vsPref);
 }
 
-std::vector<size_t> AINetDataContainer::splitStringToSizeT(const std::string & strInput, const std::string & strDelimiter)
+std::vector<size_t> AINetTrainingData::splitStringToSizeT(const std::string & strInput, const std::string & strDelimiter)
 {
 	/** this function i used to split a string into a vector of integers.
 		\param strInput is a string of elements separated by \p strDelimiter
@@ -240,7 +240,7 @@ std::vector<size_t> AINetDataContainer::splitStringToSizeT(const std::string & s
 	return strElements;
 }
 
-std::vector<double> AINetDataContainer::splitStringToDouble(const std::string & strInput, const std::string & strDelimiter)
+std::vector<double> AINetTrainingData::splitStringToDouble(const std::string & strInput, const std::string & strDelimiter)
 {
 	/** this function i used to split a string into a vector of doubles.
 		\param strInput is a string of elements separated by \p strDelimiter
@@ -268,7 +268,7 @@ std::vector<double> AINetDataContainer::splitStringToDouble(const std::string & 
 	return strElements;
 }
 
-void AINetDataContainer::closeTrainingDataFile(std::ifstream &ptrDataFile)
+void AINetTrainingData::closeTrainingDataFile(std::ifstream &ptrDataFile)
 {
 	/** This function is used to close the training data file after reading.
 	 * \param ptrDataFile is a reference to the data file currently used.
@@ -284,7 +284,7 @@ void AINetDataContainer::closeTrainingDataFile(std::ifstream &ptrDataFile)
 	}
 }
 
-std::string AINetDataContainer::convertFromCSVGermanStyle(std::string & strFileContents)
+std::string AINetTrainingData::convertFromCSVGermanStyle(std::string & strFileContents)
 {
 	/** this converts a german style *.csv file to a standard *.csv file
 		\param strFileContents is a reference to the string data to be converted
@@ -298,7 +298,7 @@ std::string AINetDataContainer::convertFromCSVGermanStyle(std::string & strFileC
 	return strFileContents;
 }
 
-std::string AINetDataContainer::convertToCSVStandardStyle(std::string & strFileContents)
+std::string AINetTrainingData::convertToCSVStandardStyle(std::string & strFileContents)
 {
 	/** this converts a german style *.csv file to a standard *.csv file
 		\param strFileContents is a reference to the string data to be converted
@@ -311,7 +311,7 @@ std::string AINetDataContainer::convertToCSVStandardStyle(std::string & strFileC
 	return strFileContents;
 }
 
-size_t AINetDataContainer::loadTrainingDataFile()
+size_t AINetTrainingData::loadTrainingDataFile()
 {
 	/** This function is used to load all the training data.
 	  * \return the number of unreadable lines.
@@ -459,7 +459,7 @@ size_t AINetDataContainer::loadTrainingDataFile()
 	return iNumberOfFalseLines;
 }
 
-bool AINetDataContainer::openTrainingDataFile(std::ifstream &ptrDataFile)
+bool AINetTrainingData::openTrainingDataFile(std::ifstream &ptrDataFile)
 {
 	/** This function is used to open the training data file
 	* @param ptrDataFile is a reference to the training data *.csv file.
@@ -479,7 +479,7 @@ bool AINetDataContainer::openTrainingDataFile(std::ifstream &ptrDataFile)
 	}
 }
 
-size_t AINetDataContainer::loadTrainingData(std::string strFileName, bool bSample)
+size_t AINetTrainingData::loadTrainingData(std::string strFileName, bool bSample)
 {
 	/** This function is used to load training data from an *.csv file
 		\param strFileName is the name of the file to be used.
@@ -494,7 +494,7 @@ size_t AINetDataContainer::loadTrainingData(std::string strFileName, bool bSampl
 	return retVal;
 }
 
-std::string AINetDataContainer::TrainingDataColumnName(size_t tmpColumn, bool shortList)
+std::string AINetTrainingData::TrainingDataColumnName(size_t tmpColumn, bool shortList)
 {
 	/** This function will return the name of a given TrainingDataColumn
 		\param tmpColumn the column which name is to be returned
@@ -555,7 +555,14 @@ std::string AINetDataContainer::TrainingDataColumnName(size_t tmpColumn, bool sh
 	}
 	else
 	{
-		tmpString = this->vStrTrainingDataColumns.at(std::max((size_t)0, std::min(tmpColumn, vStrTrainingDataColumns.size())));
+		if ((tmpColumn >= 0) || (tmpColumn < vStrTrainingDataColumns.size()))
+		{
+			tmpString = this->vStrTrainingDataColumns.at(tmpColumn);
+		}
+		else
+		{
+			tmpString = "unknown column";
+		}
 	}
 	return tmpString;
 }

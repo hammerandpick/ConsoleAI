@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="..\ConsoleAI\AINetClass.h" />
     <ClInclude Include="..\ConsoleAI\AINetDataContainer.h" />
+    <ClInclude Include="..\ConsoleAI\AINetTrainingData.h" />
     <ClInclude Include="..\ConsoleAI\CodeFromWeb.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -158,6 +159,7 @@
   <ItemGroup>
     <ClCompile Include="..\ConsoleAI\AINetClass.cpp" />
     <ClCompile Include="..\ConsoleAI\AINetDataContainer.cpp" />
+    <ClCompile Include="..\ConsoleAI\AINetTrainingData.cpp" />
     <ClCompile Include="..\ConsoleAI\CodeFromWeb.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
