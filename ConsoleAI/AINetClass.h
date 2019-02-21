@@ -16,59 +16,59 @@ public:
 
 	//AINetClass(const AINetClass &oldClass); 
 	size_t NUMNODES();
-	unsigned int NUMINPUTNODES();
-	unsigned int NUMREALINPUTNODES();
-	unsigned int NUMOUTPUTNODES();
-	unsigned int NUMHIDDENNODES();
-	unsigned int SizeOfArray();
-	unsigned int getMaxIterations();
-	unsigned int Counter(bool bIncrease = false);
-	unsigned int CurrentTrainingDataRow();
-	unsigned int getActivationFunction();
-	unsigned int getActivationFunction(unsigned int tmpNodeID);
-	unsigned int getNumberOfNodesInLayer(int tmpLayer);
-	unsigned int getNumberOfLayers(bool bOnlyHidden = false);
-	unsigned int getLayerStart(int tmpLayer, bool falseForLayerEnd = true);
+	size_t NUMINPUTNODES();
+	size_t NUMREALINPUTNODES();
+	size_t NUMOUTPUTNODES();
+	size_t NUMHIDDENNODES();
+	size_t SizeOfArray();
+	size_t getMaxIterations();
+	size_t Counter(bool bIncrease = false);
+	size_t CurrentTrainingDataRow();
+	size_t getActivationFunction();
+	size_t getActivationFunction(size_t tmpNodeID);
+	size_t getNumberOfNodesInLayer(int tmpLayer);
+	size_t getNumberOfLayers(bool bOnlyHidden = false);
+	size_t getLayerStart(int tmpLayer, bool falseForLayerEnd = true);
 	
 	double LearningRate();
 	size_t TrainingDataColumns();
-	unsigned int getTrainingDataRowsMax();	
-	unsigned int getMaximumNodesLayer(bool bGetMaximumNodes = false);
-	unsigned int getLayerByNode(unsigned int itmpNode);
+	size_t getTrainingDataRowsMax();	
+	size_t getMaximumNodesLayer(bool bGetMaximumNodes = false);
+	size_t getLayerByNode(size_t itmpNode);
 	bool continueCalculation();
 	bool IsTrainingRestart();
-	bool IsLastLayer(unsigned int tmpLayer);
+	bool IsLastLayer(size_t tmpLayer);
 	bool linkTrainingDataContainer(std::shared_ptr<AINetTrainingData> ptrToContainer);
 	bool getOptionStatus();
-	bool setNumInputNodes(unsigned int tmpInputNodes);
-	bool setNumOutputNodes(unsigned int tmpOutputNodes);
+	bool setNumInputNodes(size_t tmpInputNodes);
+	bool setNumOutputNodes(size_t tmpOutputNodes);
 	bool setTimePrevRows(int tmpPrevRows);
-	bool setTimeInputColumns(unsigned int tmpPrevCols);
-	bool setMaxIterations(unsigned int tmpMaxIterations);
+	bool setTimeInputColumns(size_t tmpPrevCols);
+	bool setMaxIterations(size_t tmpMaxIterations);
 	bool setLearningRate(double tmpLearningRate);
-	bool setTrainingDataRowsMax(unsigned int tmpMaxRows);
-	bool setNumberOfHiddenLayers(unsigned int tmpHiddenLayers, unsigned int tmpNodesinHiddenLayer = 1);
-	bool setNumberOfNodesinLayer(int tmpLayer, unsigned int tmpNumberOfNodes);
+	bool setTrainingDataRowsMax(size_t tmpMaxRows);
+	bool setNumberOfHiddenLayers(size_t tmpHiddenLayers, size_t tmpNodesinHiddenLayer = 1);
+	bool setNumberOfNodesinLayer(int tmpLayer, size_t tmpNumberOfNodes);
 	bool resetCounter();
 	bool IsNetworkReady();
 	bool autoGenerateInternalNetwork();
-	double NodeFunction(double weightedInput, unsigned int currentNodeID, bool derivative = false);
+	double NodeFunction(double weightedInput, size_t currentNodeID, bool derivative = false);
 	double updateWeights();
-	double getNodeValue(unsigned int tmpNode);
+	double getNodeValue(size_t tmpNode);
 	void TrainingDataColumnPush_Back(std::string tmpString);
 	void activateNetwork();
 	double calculateErrorMSE(int iLayer);
-	void connectNodes(bool bFullyConnected = true, unsigned int iRandSeed = 0);
-	void combineNetworks(AINetClass *ptrAiNetClass, std::mutex & ptrMutex, unsigned int iNumber=0);
+	void connectNodes(bool bFullyConnected = true, size_t iRandSeed = 0);
+	void combineNetworks(AINetClass *ptrAiNetClass, std::mutex & ptrMutex, size_t iNumber=0);
 	void createNetwork(std::vector<std::string> tmpsNetwork);
-	void createNetwork(std::vector<unsigned int> tmpviNetwork);
+	void createNetwork(std::vector<size_t> tmpviNetwork);
 	void printIO(double sumOfSquaredErrors);
 	void displayWeights();
 	void displayStatus();
 	void displayAllNodes(double sumOfSquaredErrors);
-	void initialize();
-	void saveResultingNetwork(unsigned int iNumber = 0);
-	void setActivationFunction(unsigned int typeOfActivationFunction, unsigned int specificLayer = 0);
+	void initialize(std::vector<size_t> iInternalTopology = { 0 });
+	void saveResultingNetwork(size_t iNumber = 0);
+	void setActivationFunction(size_t typeOfActivationFunction, size_t specificLayer = 0);
 	void setDataFileName(std::string strFileName);
 	void setInternalName(std::string strIntName);
 	void setOptionAutoGenerate(bool bAutoGenerate);
@@ -80,10 +80,10 @@ public:
 	void setOptionSilent(bool bSilent);
 	void setOptionStatus(bool bSetStatus);
 	void setOptionWeight(bool bSetWeight);
-	void setOptionNodeFunction(unsigned int tmpNodeFunction);
-	void setOptionThreadCombinatingMode(unsigned int iTCMode);
+	void setOptionNodeFunction(size_t tmpNodeFunction);
+	void setOptionThreadCombinatingMode(size_t iTCMode);
 	void setPercentVerification(double tmpPercentVerifiy);
-	void setTrainingRow(unsigned int iTmpRow);
+	void setTrainingRow(size_t iTmpRow);
 	
 	void setInputOffset(double tmpInputOffset);
 	void sortNetwork();
@@ -139,26 +139,26 @@ private:
 	bool bBackpropagationActive = false;
 	double dInputOffset = 0.0;	// set an input offset
 	double dPercentVerification = 0.0;	// set the percentage of verification data
-	unsigned int iThreadedCombinationMode = 0; // set the mode for combining data
-	unsigned int iActivationFunction = 0;
-	unsigned int iNumInputNodes = 2;	// basic number of input nodes
-	unsigned int iNumRealInputNodes = 2;
-	unsigned int iNumOutputNodes = 1;	// number of output nodes
+	size_t iThreadedCombinationMode = 0; // set the mode for combining data
+	size_t iActivationFunction = 0;
+	size_t iNumInputNodes = 2;	// basic number of input nodes
+	size_t iNumRealInputNodes = 2;
+	size_t iNumOutputNodes = 1;	// number of output nodes
 	int iTimePreviousRows = 0;	// number of previous rows for time-dependent calculation
-	unsigned int iTimeNumInputColumns = 0;	// number of columns for time-dependent calculation
+	size_t iTimeNumInputColumns = 0;	// number of columns for time-dependent calculation
 	int iTimeNextRows = 0;
-	unsigned int iTimeNumOutputColumns = 0;
-	unsigned int iMaxIterations = 1000;
-	unsigned int iCounter = 0;
-	unsigned int iTrainingDataRow = 0;
-	unsigned int iTrainingDataRowsMax = 0; //number of rows in training data
+	size_t iTimeNumOutputColumns = 0;
+	size_t iMaxIterations = 1000;
+	size_t iCounter = 0;
+	size_t iTrainingDataRow = 0;
+	size_t iTrainingDataRowsMax = 0; //number of rows in training data
 	double dlearningRate = 0.2; // the default learning rate
 	double dWorstError = 0.0;
-	unsigned int iWorstErrorRow = 0;
+	size_t iWorstErrorRow = 0;
 	std::string strInternalName = "UNKNOWN";
 	std::vector<std::string> vTrainingDataColumns={ "0" };
-	std::vector<unsigned int> inputDataPullList = { 0 };
-	std::vector<unsigned int> viLayerActivationFunction = { 0 };
+	std::vector<size_t> inputDataPullList = { 0 };
+	std::vector<size_t> viLayerActivationFunction = { 0 };
 	std::vector<std::string> errorList = { "0" };
 	std::vector<std::vector<double>> vvErrors={ {0.0} };
 	std::vector<std::string> vstrResultFilenames = { "" };
@@ -169,15 +169,15 @@ private:
 	std::string generateFileInput(std::string& strFileContents);
 	bool recalculateInputDataPullList();
 	bool throwFailure(std::string tmpError, bool doexit);
-	double getTrainingDataValue(unsigned int row, unsigned int column);
+	double getTrainingDataValue(size_t row, size_t column);
 	double updateWeightsInLayer(int tmpLayer);
 	std::string getExcelColumn(size_t stColumn);
-	unsigned int getNumberOfInputNodes();
-	unsigned int getNumberOfOutputNodes();
-	unsigned int resizeVectors();
+	size_t getNumberOfInputNodes();
+	size_t getNumberOfOutputNodes();
+	size_t resizeVectors();
 	int validLayer(int& tmpLayer, bool tmpRemoveOffset = false);
 
-	std::string NodeFunctionXLS(unsigned int tmpNode, std::string tmpCalculatedInput);
-	std::string NodeFunctionJS(unsigned int tmpNode, std::string tmpCalculatedInput);
+	std::string NodeFunctionXLS(size_t tmpNode, std::string tmpCalculatedInput);
+	std::string NodeFunctionJS(size_t tmpNode, std::string tmpCalculatedInput);
 
 };

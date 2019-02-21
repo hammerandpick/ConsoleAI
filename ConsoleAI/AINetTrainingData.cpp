@@ -31,15 +31,36 @@ size_t AINetTrainingData::getTrainingDataRowsMax()
 	/** This function returns the maximum number of training data rows. It calculates the maximum number of rows from the file reduced by the number of previous and next rows when using a time sceme.
 		\return the maximum number of training data rows.
 	*/
-	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows - (size_t)this->intTimePreviousRows;
+
+	return (this->vvTrainingDataMatrix.size() - this->intTimeNextRows - this->intTimePreviousRows);
 }
 
-size_t AINetTrainingData::getTrainingDataColumnsMax()
+size_t AINetTrainingData::getTrainingDataColumnsMax(bool bRecount)
 {
 	/** This function returns the number of columns in training data.
-		\retun The number of columns in training data.
+		\param bRecount (optional) if set true, this function will do a full count. if not set this function will rely on previously stored value.
+		\return The number of columns in training data.
 	*/
-	return this->vvTrainingDataMatrix.size();
+
+	size_t intMaxColumns = 0;
+
+	if ((this->intTrainingDataColumsMax == 0) || bRecount)
+	{
+		// crawl all date for longest column
+		for (size_t i = 0; i < this->vvTrainingDataMatrix.size(); ++i)
+		{
+			size_t intTempSize = this->vvTrainingDataMatrix.at(i).size();
+			if (intTempSize > intMaxColumns)
+			{
+				intMaxColumns = intTempSize;
+			}
+		}
+	}
+	else
+	{
+		intMaxColumns = this->intTrainingDataColumsMax;
+	}
+	return intMaxColumns;
 }
 
 size_t AINetTrainingData::getTrainingDataBegin()
@@ -80,7 +101,7 @@ size_t AINetTrainingData::getNumberOfOutputNodes()
 double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 {
 	/** This function returns the value of the training data in \p colum of \p row.
-		\param colum The colum to be returned.
+		\param column The colum to be returned.
 		\param row The row to be retrned.
 		\return Value of \p column and \p row.
 	*/
@@ -173,7 +194,7 @@ bool AINetTrainingData::setOptionCSVGermanStyle(bool bGerStyle)
 bool AINetTrainingData::setPreferredNetworkTopology(std::string strPref)
 {
 	/** this function is used to set the prefered network topology
-		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
+		\param strPref is a string with the topology as integer values from input (lowest) to output (highest)
 		\return returns true if successfull
 	*/
 
@@ -555,8 +576,9 @@ std::string AINetTrainingData::TrainingDataColumnName(size_t tmpColumn, bool sho
 	}
 	else
 	{
-		if ((tmpColumn >= 0) || (tmpColumn < vStrTrainingDataColumns.size()))
+		if ((tmpColumn >= 0) && (tmpColumn < vStrTrainingDataColumns.size()))
 		{
+			// read a value if it is within valid range.
 			tmpString = this->vStrTrainingDataColumns.at(tmpColumn);
 		}
 		else

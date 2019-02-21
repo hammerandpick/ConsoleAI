@@ -30,9 +30,6 @@
     <ClInclude Include="..\ConsoleAI\AINetClass.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="..\ConsoleAI\AINetDataContainer.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\ConsoleAI\CodeFromWeb.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -48,9 +45,6 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\ConsoleAI\AINetClass.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ConsoleAI\AINetDataContainer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\ConsoleAI\CodeFromWeb.cpp">
