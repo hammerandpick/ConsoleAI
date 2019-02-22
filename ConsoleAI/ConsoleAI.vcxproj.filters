@@ -30,6 +30,9 @@
     <ClInclude Include="AINetTrainingData.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="AINode.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -45,6 +48,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="AINetTrainingData.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="AINode.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

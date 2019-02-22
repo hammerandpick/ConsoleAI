@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="AINetClass.h" />
     <ClInclude Include="AINetTrainingData.h" />
+    <ClInclude Include="AINode.h" />
     <ClInclude Include="CodeFromWeb.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="stdafx.h" />
@@ -160,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="AINetClass.cpp" />
     <ClCompile Include="AINetTrainingData.cpp" />
+    <ClCompile Include="AINode.cpp" />
     <ClCompile Include="CodeFromWeb.cpp" />
     <ClCompile Include="ConsoleAI.cpp" />
     <ClCompile Include="pch.cpp">

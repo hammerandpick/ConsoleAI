@@ -461,6 +461,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 				if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
 				else theFirstElement = (int)theLine.length();
 			}
+
 			if (vdLocalVector.size() >= 1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back())
 			{
 				// counting number of lines and copying whole row to vector<vector>

@@ -32,7 +32,7 @@ AINetClass::AINetClass()
 	this->iNumInputNodes = 2;
 	this->iNumOutputNodes = 1;
 	this->ptrAINDataContainer = nullptr;
-	this->iMaxIterations = 100000;
+	this->iMaxIterations = 1000;
 	this->dlearningRate = 0.2;
 	this->iCounter = 0;
 	this->iTrainingDataRowsMax = 0;
@@ -199,8 +199,13 @@ size_t AINetClass::getNumberOfLayers(bool bOnlyHidden)
 
 size_t AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 {
-	// returns begin of layer (or end of layer if parameter is false.
-	int chosenLayer = 0;
+	/** Call for number of first node inspecified layer
+		\param tmpLayer Specifiy layer.
+		\param falseForLayerEnd (optional) If set to false this will return the last node of the layer.
+		\return Returnvalue is number of node at begin (or end) of specified layer. minimum of returnvalue is 1.
+	*/
+	
+	size_t chosenLayer = 0;
 	size_t retInt = 0;
 	chosenLayer = this->validLayer(tmpLayer) - 1;
 
@@ -210,7 +215,7 @@ size_t AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 	}
 	else
 	{
-		for (int i = 0; i <= chosenLayer; i++)
+		for (int i = 0; i <= chosenLayer; ++i)
 		{
 			if (i < chosenLayer)
 			{
@@ -219,21 +224,21 @@ size_t AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 			}
 			else
 			{
-				// add one for begin or the number of nodes for end
+				// now adding up the last (the choosenLayer
 				if (falseForLayerEnd)
 				{
-					retInt += 1; // begin
+					retInt += 1; // add one for begin of layer
 				}
 				else
 				{
-					// count 
+					// add the number of elements in the layer 
 					retInt += this->vdNetworkTopology.at(i);
 				}
 				break;
 			}
 		}
 	}
-	return retInt;
+	return max((size_t)1, retInt);
 }
 
 double AINetClass::LearningRate()
@@ -494,7 +499,8 @@ void AINetClass::shuffleTrainingData()
 
 void AINetClass::activateNetwork()
 {
-	// activate the network.
+	/** Perform calculation using current values in the network to ajust weights.
+	*/
 
 	size_t numHiddenLayers = this->getNumberOfLayers(true);
 
@@ -1272,7 +1278,10 @@ void AINetClass::trainLine()
 
 void AINetClass::trainNetwork(bool bSilent)
 {
-	// training the network after all initialization is done
+	/** This function is used to train the network. Must not be called bevore AINetClass::initialize()
+		\param bSilent (optional) This parameter can be used to prevent any output to screen.
+	*/
+
 	if (bSilent)
 	{
 		this->bOptionDisplayAllNodes = false;
