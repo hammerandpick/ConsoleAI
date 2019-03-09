@@ -8,7 +8,7 @@ public:
 	~AINetTrainingData();
 
 	
-	size_t getTrainingDataRowsMax();
+	size_t getTrainingDataRowsMax(bool bReload=false);
 	size_t getTrainingDataColumnsMax(bool bRecount=false);
 	size_t getTrainingDataBegin();
 	size_t getTrainingDataEnd();
@@ -49,9 +49,10 @@ private:
 	size_t intTimeNextRows = 0;
 	size_t intTimePrevNumberOfColumns = 0;
 	size_t intTimeNextNumberOfColumns = 0;
-	size_t intPercentOfDataToBeUsed = 100;
+	double dPercentVerificationData = 0.0;
 	size_t intLinesRead = 4;
 	size_t intTrainingDataColumsMax = 0;
+	size_t intTrainingDataRowsMax = 0;
 	std::vector<std::string> vStrTrainingDataColumns = { "no data loaded", "standard-xor" };
 	std::vector<size_t> vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
 	std::vector<std::vector<double>> vvTrainingDataMatrix = { {0.0,0.0,1.0},{0.0,1.0,0.0},{1.0,0.0,0.0},{1.0,1.0,0.0} }; // standard xor training data

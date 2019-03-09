@@ -15,7 +15,7 @@ AINetTrainingData::AINetTrainingData()
 	  * \relates AINetTrainingData(double tdm)
 	*/
 
-	this->vvTrainingDataMatrix = { {1.0,0.0,0.0,1.0},{1.0,0.0,1.0,0.0},{1.0,1.0,0.0,0.0},{1.0,1.0,1.0,0.0} }; // standard xor training data
+	this->vvTrainingDataMatrix = { {1.0,0.0,0.0,1.0},{1.0,0.0,1.0,0.0},{1.0,1.0,0.0,0.0},{1.0,1.0,1.0,1.0} }; // standard xor training data
 	this->vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
 }
 
@@ -26,13 +26,20 @@ AINetTrainingData::~AINetTrainingData()
 }
 
 
-size_t AINetTrainingData::getTrainingDataRowsMax()
+size_t AINetTrainingData::getTrainingDataRowsMax(bool bReload)
 {
-	/** This function returns the maximum number of training data rows. It calculates the maximum number of rows from the file reduced by the number of previous and next rows when using a time sceme.
+	/** This function returns the maximum number of training data rows. It calculates the maximum number of rows from the file.
+		For each line udes as previous or next data (historic calculation) this number will be reduced.
+		Further reduction is done if verification data is inside the file.
 		\return the maximum number of training data rows.
 	*/
 
-	return (this->vvTrainingDataMatrix.size() - this->intTimeNextRows - this->intTimePreviousRows);
+	if (this->intTrainingDataRowsMax == 0 || bReload)
+	{
+		this->intTrainingDataRowsMax = llround((this->vvTrainingDataMatrix.size() - this->intTimeNextRows - this->intTimePreviousRows)*(1 - this->dPercentVerificationData));
+	}
+
+	return this->intTrainingDataRowsMax;
 }
 
 size_t AINetTrainingData::getTrainingDataColumnsMax(bool bRecount)
@@ -386,7 +393,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			else theFirstElement = (int)theLine.length();
 			// read value
 			// example for this line:
-			// 1000,-5,3
+			// 1000,5,3
 			// 1000 iterations, -5 5 line above current line are historic data, 3 columns are used for historic data (5x3=)15 additional input nodes added.
 			switch (currentElementCounter)
 			{
@@ -399,10 +406,12 @@ size_t AINetTrainingData::loadTrainingDataFile()
 				this->intTimePreviousRows = atoi(theLine.substr(0, theFirstElement).c_str());
 				break;
 			case 2:
+				// third element is number of columns to be used of previous data
 				this->intTimePrevNumberOfColumns = atoi(theLine.substr(0, theFirstElement).c_str());
 				break;
 			case 5:
-				this->intPercentOfDataToBeUsed = atof(theLine.substr(0, theFirstElement).c_str());
+				// Todo change this
+				this->dPercentVerificationData = std::min(0.0,std::max(1.0,atof(theLine.substr(0, theFirstElement).c_str())));
 				break;
 			default:
 				break;

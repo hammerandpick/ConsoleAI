@@ -35,7 +35,6 @@ AINetClass::AINetClass()
 	this->iMaxIterations = 1000;
 	this->dlearningRate = 0.2;
 	this->iCounter = 0;
-	this->iTrainingDataRowsMax = 0;
 	this->iActivationFunction = 0;
 	this->bOptionShuffle = false;
 	this->bOptionIO = false;
@@ -179,10 +178,26 @@ size_t AINetClass::getActivationFunction(size_t tmpNodeID)
 	return this->viLayerActivationFunction.at(min(tmpNodeID, this->viLayerActivationFunction.size() - 1));
 }
 
-size_t AINetClass::getNumberOfNodesInLayer(int tmpLayer)
+size_t AINetClass::getNumberOfNodesInLayer(signed int iTmpLayer)
 {
-	// get the number of nodes in specified layer.
-	// if tmpLayer is negative it is fetched in reverse order. so output layer is -1
+	/** This will return the number of nodes in one layer, see also getNumberOfNodesInLayer(size_t tmpLayer, bool fromEnd)
+		\param iTmpLayer (signed int) layer in question. if negative it will be counted from output layer.
+		\return (size_t) will return the number of the layer
+	*/
+	size_t tmpReturn = 0;
+
+	size_t tmpLayer = this->validLayer(iTmpLayer);
+	tmpReturn = this->vdNetworkTopology.at(max(0, tmpLayer - 1));
+	return tmpReturn;
+}
+
+size_t AINetClass::getNumberOfNodesInLayer(size_t tmpLayer)
+{
+	/** This will return the number of nodes in one layer, see also getNumberOfNodesInLayer(signed int tmpLayer, bool fromEnd)
+		\param tmpLayer (signed int) layer in question. 
+		\return (size_t) will return the number of the layer
+	*/
+
 	size_t tmpReturn = 0;
 
 	this->validLayer(tmpLayer);
@@ -215,7 +230,7 @@ size_t AINetClass::getLayerStart(int tmpLayer, bool falseForLayerEnd)
 	}
 	else
 	{
-		for (int i = 0; i <= chosenLayer; ++i)
+		for (size_t i = 0; i <= chosenLayer; ++i)
 		{
 			if (i < chosenLayer)
 			{
@@ -262,7 +277,7 @@ size_t AINetClass::getTrainingDataRowsMax()
 	/	- next Data (historical)
 	/	- portion of verification data
 	*/
-	return max(1,this->iTrainingDataRowsMax - abs(this->iTimePreviousRows));
+	return max(1,this->ptrAINDataContainer->getTrainingDataRowsMax() - this->iTimePreviousRows);
 }
 
 size_t AINetClass::getMaximumNodesLayer(bool bGetMaximumNodes)
@@ -308,7 +323,10 @@ size_t AINetClass::getLayerByNode(size_t iTmpNode)
 
 bool AINetClass::continueCalculation()
 {
-	// continue calculation
+	/** This function is used to check if the calculation should be continued. This is the case if the counter has not reached maxiterations
+		\return true if calculation should be continued, otherwise false.
+		*/
+	
 	bool bContCalc = false;
 	if (this->Counter() < this->getMaxIterations())
 	{
@@ -317,17 +335,23 @@ bool AINetClass::continueCalculation()
 	return bContCalc;
 }
 
-bool AINetClass::IsTrainingRestart()
+bool AINetClass::IsTrainingEndOfDataset()
 {
-	// returns true if training data has restarted
+	/** This function is used to check if the end of the dataset has been reached.
+		\return True if end has been reached, otherwise false.
+	*/
 	if (iCounter % this->getTrainingDataRowsMax() == 0)
 		return true;
 	else 
 		return false;
 }
 
-bool AINetClass::IsLastLayer(size_t tmpLayer)
+bool AINetClass::IsLastLayer(int tmpLayer)
 {
+	/** This function can be used to check if a specified layer is the output layer.
+		\param tmpLayer The layer in question.
+		\return True if it is the output layer, otherwise false.
+	*/
 	if (tmpLayer == this->vdNetworkTopology.size())
 		return true;
 	else
@@ -370,11 +394,13 @@ bool AINetClass::setNumOutputNodes(size_t tmpOutputNodes)
 	return (iNumOutputNodes == tmpOutputNodes);
 }
 
-bool AINetClass::setTimePrevRows(int tmpPrevRows)
+bool AINetClass::setTimePrevRows(size_t tmpPrevRows)
 {
-	// set the number of rows to be used as memorized input data.
+	/** This function is used to set the number of prevoius rows to take into account.
+		\param tmpPrevRows must be positive
+	*/
 	this->initializationDone = false;		// significant changes to network, so initialization should be renewed
-	this->iTimePreviousRows = abs(tmpPrevRows);
+	this->iTimePreviousRows = tmpPrevRows;
 	if (tmpPrevRows == 0)
 	{
 		bHistoricData = false;
@@ -429,21 +455,6 @@ bool AINetClass::setLearningRate(double tmpLearningRate)
 	return (dlearningRate == tmpLearningRate);
 }
 
-bool AINetClass::setTrainingDataRowsMax(size_t tmpMaxRows)
-{
-	// set the maximum number of training data rows
-	if (tmpMaxRows > 0)
-	{
-		this->iTrainingDataRowsMax = min(max(1, tmpMaxRows), UINT_MAX);
-	}
-	else
-	{
-		initializationDone = false;
-	}
-	this->recalculateInputDataPullList();
-	return (this->iTrainingDataRowsMax == tmpMaxRows);
-}
-
 bool AINetClass::setNumberOfHiddenLayers(size_t tmpHiddenLayers, size_t tmpNodesinHiddenLayer)
 {
 	// set the number of hidden layers
@@ -462,10 +473,10 @@ bool AINetClass::setNumberOfHiddenLayers(size_t tmpHiddenLayers, size_t tmpNodes
 	return (this->vdNetworkTopology.capacity() == tmpHiddenLayers + 2);
 }
 
-bool AINetClass::setNumberOfNodesinLayer(int tmpLayer, size_t tmpNumberOfNodes)
+bool AINetClass::setNumberOfNodesinLayer(int iTmpLayer, size_t tmpNumberOfNodes)
 {
 	bool tmpReturn = false;
-	this->validLayer(tmpLayer);
+	size_t tmpLayer = this->validLayer(iTmpLayer);
 	// tmpLayer is in valid range
 	this->vdNetworkTopology.at(max(0, tmpLayer - 1)) = max(1, tmpNumberOfNodes);
 	return true;
@@ -499,7 +510,7 @@ void AINetClass::shuffleTrainingData()
 
 void AINetClass::activateNetwork()
 {
-	/** Perform calculation using current values in the network to ajust weights.
+	/** Perform calculation using current values in the network and ajust weights.
 	*/
 
 	size_t numHiddenLayers = this->getNumberOfLayers(true);
@@ -507,11 +518,11 @@ void AINetClass::activateNetwork()
 	for (size_t currentLayer = 2; currentLayer <= 1 + this->getNumberOfLayers(true); currentLayer++)
 	{
 		// do this for each internal layer
-		for (size_t h = this->getLayerStart(currentLayer); h <= this->getLayerStart(currentLayer, false); h++)
+		for (size_t h = this->getLayerStart(currentLayer); h <= this->getLayerStart(currentLayer, false); ++h)
 		{
 			// do this for each node in layer
 			double weightedInput = 0.0;
-			for (size_t p = this->getLayerStart(currentLayer - 1); p <= this->getLayerStart(currentLayer - 1, false); p++)
+			for (size_t p = this->getLayerStart(currentLayer - 1); p <= this->getLayerStart(currentLayer - 1, false); ++p)
 			{
 				// do this for each node in previous layer
 				weightedInput += this->vecWeights[p][h] * this->vecValues[p];
@@ -522,10 +533,10 @@ void AINetClass::activateNetwork()
 		}
 	}
 
-	for (size_t o = this->getLayerStart(-1); o <= this->getLayerStart(-1, false); o++)
+	for (size_t o = this->getLayerStart(-1); o <= this->getLayerStart(-1, false); ++o)
 	{
 		double weightedInput = 0.0;
-		for (size_t d = this->getLayerStart(-2); d <= this->getLayerStart(-2, false); d++)
+		for (size_t d = this->getLayerStart(-2); d <= this->getLayerStart(-2, false); ++d)
 		{
 			weightedInput += this->vecWeights[d][o] * this->vecValues[d];
 		}
@@ -545,156 +556,6 @@ void AINetClass::setOptionDisplayAllNodes(bool bDisplayAll)
 {
 	// setting option display all nodes
 	this->bOptionDisplayAllNodes = bDisplayAll;
-}
-
-size_t AINetClass::loadTrainingDataFile()
-{
-	std::string theLine = "no open file.";
-	int theFirstElement = 0;
-	size_t iNumberOfLines = 0;
-	size_t iNumberOfFalseLines = 0;
-	int iTimePreviousElements = 0;	// How many previous rows for calculation?
-
-	std::ifstream theAIDataFile;
-	
-	this->ptrAINDataContainer->setTrainingDataFileName(this->strAIDataFileName);
-	this->ptrAINDataContainer->openTrainingDataFile(theAIDataFile);
-	
-	// clear errors
-	this->vvErrors.clear();
-
-	if (theAIDataFile.is_open())
-	{
-		// Read First Line and store for Information.
-		std::getline(theAIDataFile, theLine);
-		this->strAIDataFileHeader = theLine;
-
-		//read the second line and reconfigure network.
-		std::getline(theAIDataFile, theLine);
-		this->generateFileInput(theLine);
-		if ((theLine.find_first_of(",") == theLine.npos))
-		{
-			// this is no german style csv but german style is set
-			// converting line backwards
-			this->generateFileOutput(theLine);
-			// disabling option ger
-			this->setOptionCSV(false);
-		}
-		this->createNetwork(this->splitString(theLine, ","));
-
-		std::vector<double> vdLocalVector(1 + this->NUMREALINPUTNODES() + this->NUMOUTPUTNODES());
-		std::vector<double> vdOutputDummy(this->NUMOUTPUTNODES());
-		std::string loadedNumber = "";
-
-		// now start looking for maxiterations in aidatafile
-		// and setting maximum iterations
-		std::getline(theAIDataFile, theLine);
-		this->generateFileInput(theLine);
-		theFirstElement = 0;
-		int currentElementCounter = 0;
-		while (theLine.length() > 0)
-		{
-			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
-			else theFirstElement = (int)theLine.length();
-			// read value
-			// example for this line:
-			// 1000,-5,3
-			// 1000 iterations, -5 5 line above current line are historic data, 3 columns are used for historic data (5x3=)15 additional input nodes added.
-			switch (currentElementCounter)
-			{
-			case 0:
-				// first one on this line is maxiterations
-				if (!this->bOptionMaxIterationSet)
-				{
-					this->setMaxIterations(atoi(theLine.substr(0, theFirstElement).c_str()));
-				}
-				break;
-			case 1:
-				//second element on this line is number of elements in timescale
-				this->setTimePrevRows(atoi(theLine.substr(0, theFirstElement).c_str()));
-				break;
-			case 2:
-				this->setTimeInputColumns(atoi(theLine.substr(0, theFirstElement).c_str()));
-				break;
-			case 5:
-				this->setPercentVerification(atof(theLine.substr(0, theFirstElement).c_str()));
-				break;
-			default:
-				break;
-			}
-			// delete value from whole string
-			theLine.erase(0, theFirstElement + 1);
-			currentElementCounter += 1; // increase element counter
-		}
-
-		// one line for headers 
-		std::getline(theAIDataFile, theLine);
-		this->generateFileInput(theLine);
-		theFirstElement = 0;
-		this->TrainingDataColumnPush_Back("intentionally left blank");
-		while (theLine.length() > 0)
-		{
-			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
-			else theFirstElement = (int)theLine.length();
-			// read value
-			this->TrainingDataColumnPush_Back(theLine.substr(0, theFirstElement));
-			// delete value from whole string
-			theLine.erase(0, theFirstElement + 1);
-		}
-
-		//resize the vector
-		vdLocalVector.clear();
-		vdLocalVector.resize(1 + this->NUMREALINPUTNODES() + this->NUMOUTPUTNODES());
-
-		while (!theAIDataFile.eof())
-		{
-			// now begin to read data values
-			std::getline(theAIDataFile, theLine);
-			this->generateFileInput(theLine);
-			// clear vector
-			vdLocalVector.clear();
-			theFirstElement = 0;
-			vdLocalVector.push_back(1.0); // first element is base/threshold value and always set to 1.0
-
-										  // looking for first element
-			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
-			else theFirstElement = (int)theLine.length();
-
-			// clearing data from previous line
-			loadedNumber = "";
-			while ((theFirstElement > 0) && (vdLocalVector.size()<vdLocalVector.capacity())) // cancel if vector already has aincNetwork.NUMINPUTNODES() + aincNetwork.NUMOUTPUTNODES() +1 values
-			{
-				// read value
-				loadedNumber = theLine.substr(0, theFirstElement);
-				// delete value from whole string
-				theLine.erase(0, theFirstElement + 1);
-				vdLocalVector.push_back(strtod(loadedNumber.c_str(), NULL));
-
-				// check for next column
-				if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
-				else theFirstElement = (int)theLine.length();
-			}
-			if (vdLocalVector.size() >= 1 + this->iNumRealInputNodes + this->NUMOUTPUTNODES())
-			{
-				// counting number of lines and copying whole row to vector<vector>
-				
-				
-				//TODO DELETE this->ainLocalDataContainer->vvTrainingDataMatrix.push_back(vdLocalVector);
-				this->vvErrors.push_back(vdOutputDummy);
-				iNumberOfLines += 1;
-			}
-			else
-			{
-				// counting false/erronous lines
-				iNumberOfFalseLines += 1;
-			}
-		}
-		this->setTrainingDataRowsMax(iNumberOfLines);
-	}
-
-	this->ptrAINDataContainer->closeTrainingDataFile(theAIDataFile);
-
-	return iNumberOfFalseLines;
 }
 
 void AINetClass::setOptionShuffle(bool bSetShuffle)
@@ -761,12 +622,6 @@ void AINetClass::setTrainingRow(size_t iTmpRow)
 	// set the next training row 
 	this->iCounter = min(this->getTrainingDataRowsMax(),max(0,iTmpRow));
 	this->trainLine();
-}
-
-void AINetClass::setInputOffset(double tmpInputOffset)
-{
-	// set offset for all used input nodes
-	this->dInputOffset = tmpInputOffset;
 }
 
 void AINetClass::sortNetwork()
@@ -877,6 +732,11 @@ void AINetClass::initialize(std::vector<size_t> iInternalTopology)
 		this->vdNetworkTopology.push_back(this->ptrAINDataContainer->getNetworkTopology().at(this->ptrAINDataContainer->getNetworkTopology().size() - 1));
 	}
 	size_t tmpTotalNumberNodes = this->NUMNODES();
+	
+	this->iNumInputNodes= this->getNumberOfNodesInLayer(1);
+	this->iNumRealInputNodes = this->getNumberOfNodesInLayer(1);
+	this->iNumOutputNodes=this->getNumberOfNodesInLayer(-1);
+	this->recalculateInputDataPullList();
 
 	this->vecValues.clear();
 	this->vecValues.reserve(tmpTotalNumberNodes);
@@ -888,8 +748,11 @@ void AINetClass::initialize(std::vector<size_t> iInternalTopology)
 	this->vecThresholds.reserve(tmpTotalNumberNodes);
 	this->vecExpectedValues.clear();
 	this->vecExpectedValues.reserve(tmpTotalNumberNodes);
+
+	std::vector<double> tmpVector = { 0.0 };
+	tmpVector.resize(tmpTotalNumberNodes, { 0.0 });
 	this->vvErrors.clear();
-	this->vvErrors.resize(this->ptrAINDataContainer->getTrainingDataColumnsMax(), { 0.0 });
+	this->vvErrors.resize(this->ptrAINDataContainer->getTrainingDataRowsMax(), tmpVector);
 	
 
 	for (size_t i = 0; i <= tmpTotalNumberNodes; i++)
@@ -906,6 +769,8 @@ void AINetClass::initialize(std::vector<size_t> iInternalTopology)
 		}
 		this->vecWeights.push_back(tmpRow);
 	}
+
+
 	this->initializationDone = true;
 }
 
@@ -1026,24 +891,34 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 
 		// write the training data to file
 		tmpFileContents = "-- training data begin -- \nRow,";
-		for (size_t iColumn = 1; iColumn < this->ptrAINDataContainer->getTrainingDataColumnsMax(); iColumn++)
+		// writing the header
+		for (size_t iColumn = 1; iColumn < this->ptrAINDataContainer->getTrainingDataColumnsMax(); ++iColumn)
 		{
 			tmpFileContents = tmpFileContents + this->ptrAINDataContainer->TrainingDataColumnName(iColumn) + ",";
 		}
-		for (size_t iRow = 0; iRow<vvErrors.at(0).size(); iRow++)
+		for (size_t iColumn = this->getLayerStart(-1); iColumn <= this->getLayerStart(-1,false); ++iColumn)
 		{
-			tmpFileContents = tmpFileContents + "Error_" + std::to_string(iRow + (size_t) 1) + ",";
+			tmpFileContents = tmpFileContents + "Calculated_" +std::to_string(iColumn + (size_t)1) + ",";;
+		}
+		for (size_t iColumn = 0; iColumn <vvErrors.at(0).size(); iColumn++)
+		{
+			tmpFileContents = tmpFileContents + "Error_" + std::to_string(iColumn + (size_t) 1) + ",";
 		}
 		tmpFileContents = tmpFileContents + "\n";
-		for (size_t iTrainingLine = 0; iTrainingLine < this->ptrAINDataContainer->getTrainingDataRowsMax(); iTrainingLine++)
+		// writing the values
+		for (size_t iTrainingLine = 0; iTrainingLine < this->ptrAINDataContainer->getTrainingDataRowsMax(); ++iTrainingLine)
 		{
 			tmpFileContents = tmpFileContents + std::to_string(iTrainingLine)+",";
 			// write training data
-			for(size_t iRow=1; iRow< this->ptrAINDataContainer->getTrainingRowSizeT(iRow); iRow++)
+			for(size_t iColumn=1; iColumn < this->ptrAINDataContainer->getTrainingRowSizeT(iColumn); iColumn++)
 			{
-				tmpFileContents = tmpFileContents + std::to_string(this->ptrAINDataContainer->getTrainingDataValue(iRow,iTrainingLine))+ ",";
+				tmpFileContents = tmpFileContents + std::to_string(this->ptrAINDataContainer->getTrainingDataValue(iColumn,iTrainingLine))+ ",";
 			}
-			
+			for (size_t iNode = this->getLayerStart(-1); iNode <= this->getLayerStart(-1, false); iNode++)
+			{
+				tmpFileContents = tmpFileContents + std::to_string(this->vecValues.at(iNode)) + ",";
+			}
+
 			// write errors, but check first if there is a error row left
 			if (iTrainingLine < vvErrors.size())
 			{
@@ -1103,27 +978,33 @@ void AINetClass::setOptionAutoGenerate(bool bAutoGenerate)
 	this->bOptionAutoGenerate = bAutoGenerate;
 }
 
-void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed)
+void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed, bool bDeleteExisting)
 {
 	/** This function is used to create the initial connection of nodes.
 		\param bFullyConnected is used to link al nodes from one layer with all nodes from the previous layer.
 		\param iRandSeed is the seed for the random number generator.
+		\param deleteExisting (optional) delete existing connections and reset all values.
 	*/
 
-	this->bHasBeenConnected = true;
-	// first do the auto-generation if parameter is set
-	this->autoGenerateInternalNetwork();
-	// TODO allow smart connected network by removing next line of code
-	bFullyConnected = true;
-	//variables
-	size_t tmpTotalNumberNodes = 0;
-
-	// seeding random number generator
-	srand(iRandSeed);
-
-	//function
-	if (this->initializationDone)
+	if (!this->initializationDone)
 	{
+		this->throwFailure("network not properly initialized", true);
+	}
+
+	if (!this->bHasBeenConnected || bDeleteExisting)
+	{
+		this->bHasBeenConnected = true;
+		// first do the auto-generation if parameter is set
+		this->autoGenerateInternalNetwork();
+		// TODO allow smart connected network by removing next line of code
+		bFullyConnected = true;
+		//variables
+		size_t tmpTotalNumberNodes = 0;
+
+		// seeding random number generator
+		srand(iRandSeed);
+
+		//function
 		tmpTotalNumberNodes = this->NUMNODES();
 
 		for (size_t x = 1; x <= tmpTotalNumberNodes; ++x) {
@@ -1162,10 +1043,6 @@ void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed)
 		{
 			this->vecThresholds[i] = rand() / (double)rand();
 		}
-	}
-	else
-	{
-		this->throwFailure("network not properly initialized",true);
 	}
 }
 
@@ -1235,44 +1112,43 @@ void AINetClass::createNetwork(std::vector<size_t> tmpviNetwork)
 
 void AINetClass::trainLine()
 {
-	// copy input node data from matrix to input notes
-	// training with data
-
-	// setting input nodes
-
+	/** This function is used to perform the training calculation of one line from the dataset.
+	First Copy input node data from matrix to input notes.
+	Second perform training with data.
+	*/
 	size_t tmpCurrentRow = this->CurrentTrainingDataRow();
 
 	for (size_t i = 0; i <= this->iNumRealInputNodes; i++)
 	{
-		this->vecValues[i] = this->ptrAINDataContainer->getTrainingDataValue(i,tmpCurrentRow) + this->dInputOffset;
+		this->vecValues[i] = this->ptrAINDataContainer->getTrainingDataValue(i,tmpCurrentRow);
 	}
 
 	// now adding historic data for the input
-	for (size_t h = 1; h <= (size_t)abs(this->iTimePreviousRows); h++)
+	for (size_t h = 1; h <= this->iTimePreviousRows; h++)
 	{
 		if (this->iTimeNumInputColumns == 0)
 		{
 			// for each previous row add all input node values
-			for (size_t i = 1; i <= this->iNumRealInputNodes; i++)
+			for (size_t i = 1; i <= this->iNumRealInputNodes; ++i)  // starting from 1 to add data after input nodes.
 			{
-				this->vecValues[(h*this->iNumRealInputNodes+i)] = this->getTrainingDataValue(tmpCurrentRow + h, i) + this->dInputOffset;
+				this->vecValues[(h*this->iNumRealInputNodes+i)] = this->getTrainingDataValue(tmpCurrentRow + h, i);
 			}
 		}
 		else
 		{
 			// for each row select the first (iTimeNumInputColumns) columns.
-			for (size_t i = 1; i <= this->iTimeNumInputColumns; i++)
+			for (size_t i = 1; i <= this->iTimeNumInputColumns; ++i) // starting from 1 to add data after input nodes.
 			{
-				this->vecValues[this->iNumRealInputNodes+((h-1)*this->iTimeNumInputColumns) + i] = this->getTrainingDataValue(tmpCurrentRow + h, i) + this->dInputOffset;
+				this->vecValues[this->iNumRealInputNodes+((h-1)*this->iTimeNumInputColumns) + i] = this->getTrainingDataValue(tmpCurrentRow + h, i);
 			}
 		}
 		// TODO add handling for previous/historic data
 	}
 
 	// setting output nodes
-	for (size_t i = 1; i <= this->getNumberOfOutputNodes(); i++)
+	for (size_t i = 0; i < this->getNumberOfOutputNodes(); ++i)
 	{
-		this->vecExpectedValues[this->getLayerStart(-1) -1 + i] = this->getTrainingDataValue(tmpCurrentRow,this->iNumRealInputNodes+i);
+		this->vecExpectedValues[this->getLayerStart(-1) + i] = this->getTrainingDataValue(tmpCurrentRow,this->iNumRealInputNodes+1+i);
 	}
 }
 
@@ -1299,9 +1175,9 @@ void AINetClass::trainNetwork(bool bSilent)
 		sumOfSquaredErrors = this->updateWeights();
 
 		// calculate the Worst error and output
-		if (this->IsTrainingRestart())
+		if (this->IsTrainingEndOfDataset())
 		{
-			// printf("Max Error at Row %i with value %8.6f\n", iWorstErrorRow, dWorstError);
+			// printf("Max Error at Row %zu with value %8.6f\n", iWorstErrorRow, dWorstError);
 			iWorstErrorRow = 0;
 			dWorstError = 0.0;
 		}
@@ -1325,7 +1201,7 @@ void AINetClass::printIO(double sumOfSquaredErrors)
 	COORD ord;
 	if (this->bOptionIO)
 	{
-		if (this->IsTrainingRestart())
+		if (this->IsTrainingEndOfDataset())
 		{
 			printf("\nNew Row    |");
 			for (size_t i = 1; i <= this->NUMREALINPUTNODES() + this->NUMOUTPUTNODES(); i++)
@@ -1337,7 +1213,7 @@ void AINetClass::printIO(double sumOfSquaredErrors)
 			}
 			printf("\n");
 		}
-		printf("%8i:Row: %8i|", this->Counter(false), this->CurrentTrainingDataRow());
+		printf("%8zu:Row: %8zu|", this->Counter(false), this->CurrentTrainingDataRow());
 		for (size_t i = this->getLayerStart(1); i <= this->getLayerStart(1,false); i++)
 		{
 			//listing all input nodes
@@ -1364,7 +1240,7 @@ void AINetClass::printIO(double sumOfSquaredErrors)
 	{
 		ord.X = 0;
 		ord.Y = 0;
-		if (this->IsTrainingRestart())
+		if (this->IsTrainingEndOfDataset())
 		{
 			printf("\n");
 		}
@@ -1404,12 +1280,12 @@ void AINetClass::displayWeights()
 		printf("node;thresholds;");
 		for (size_t i = 1; i <= iMaxNodes; i++)
 		{
-			printf("%i;", i);//enumerating x-axis
+			printf("%zu;", i);//enumerating x-axis
 		}
 		printf("\n"); // end of first line
 		for (size_t y = 1; y < this->vecWeights.size(); y++)
 		{
-			printf("from node %i to x;", y); //output first column to remind users of position of matrix
+			printf("from node %zu to x;", y); //output first column to remind users of position of matrix
 			printf("%8.4f;", this->vecThresholds[y]);
 			for (size_t x = 1; x < this->vecWeights[y].size(); x++)
 			{
@@ -1426,29 +1302,29 @@ void AINetClass::displayStatus()
 	// display status message
 	if (this->bOptionStatus)
 	{
-		printf("\n--- STATUS ---\nNUMINPUTNODES=\t%i(%i)\n", this->NUMREALINPUTNODES(), this->NUMINPUTNODES());
-		printf("NUMOUTPUTNODES=\t%i\n", this->NUMOUTPUTNODES());
-		printf("NUMNODES=\t%i\n", this->NUMNODES());
-		printf("MAXITERATIONS=\t%i, of which %i have been performed\n", this->getMaxIterations(), this->Counter()); //131072;
+		printf("\n--- STATUS ---\nNUMINPUTNODES=\t%zu(%zu)\n", this->NUMREALINPUTNODES(), this->NUMINPUTNODES());
+		printf("NUMOUTPUTNODES=\t%zu\n", this->NUMOUTPUTNODES());
+		printf("NUMNODES=\t%zu\n", this->NUMNODES());
+		printf("MAXITERATIONS=\t%zu, of which %zu have been performed\n", this->getMaxIterations(), this->Counter()); //131072;
 		printf("LEARNINGRATE=\t%8.4f\n", this->LearningRate());
-		printf("training lines = \t%8i\n", this->getTrainingDataRowsMax());
+		printf("training lines = \t%8zu\n", this->getTrainingDataRowsMax());
 		printf("-- Options --\n");
 		printf("SHUFFLE:\t%s\n", this->bOptionShuffle ? "true" : "false");
 		printf("AUTO-GENERATE:\t%s\n",this->bOptionAutoGenerate ? "true" : "false");
 		printf("CSV-GER:\t%s\n", this->bOptionCSVGER ? "true" : "false");
-		printf("passes=\t%8i\t with %8i additional rows\n", this->getMaxIterations() / this->getTrainingDataRowsMax(), this->getMaxIterations() % this->getTrainingDataRowsMax());
+		printf("passes=\t%8zu\t with %8zu additional rows\n", this->getMaxIterations() / this->getTrainingDataRowsMax(), this->getMaxIterations() % this->getTrainingDataRowsMax());
 		if (this->iTimeNextRows == 0 && this->iTimePreviousRows == 0)
 		{
 			printf("TIME_DEPENCY:\tOFF\n");
 		}
 		else
 		{
-			printf("TIME_DEPENCY:\tON\n\tin\t%4i rows with first %4i nodes\n\tout\t%4i rows with first %4i nodes", this->iTimePreviousRows, this->iTimeNumInputColumns, this->iTimeNextRows, this->iTimeNumOutputColumns);
+			printf("TIME_DEPENCY:\tON\n\tin\t%4zu rows with first %4zu nodes\n\tout\t%4zu rows with first %4zu nodes", this->iTimePreviousRows, this->iTimeNumInputColumns, this->iTimeNextRows, this->iTimeNumOutputColumns);
 		}
-		printf("\nneural network with %8i layers", this->getNumberOfLayers());
+		printf("\nneural network with %8zu layers", this->getNumberOfLayers());
 		for (size_t numLayers = 1; numLayers <= this->getNumberOfLayers(); numLayers++)
 		{
-			printf("\nlayer %4i with %8i nodes, from node %4i to %4i", numLayers, this->getNumberOfNodesInLayer(numLayers), this->getLayerStart(numLayers), this->getLayerStart(numLayers, false));
+			printf("\nlayer %4zu with %8zu nodes, from node %4zu to %4zu", numLayers, this->getNumberOfNodesInLayer(numLayers), this->getLayerStart(numLayers), this->getLayerStart(numLayers, false));
 			if (numLayers == 1)printf(" (input) ");
 			if (numLayers == this->getNumberOfLayers())printf(" (output) ");
 		}
@@ -1459,7 +1335,7 @@ void AINetClass::displayStatus()
 void AINetClass::displayAllNodes(double sumOfSquaredErrors)
 {
 	// display all nodes
-	if (this->IsTrainingRestart())
+	if (this->IsTrainingEndOfDataset())
 		printf("Display Whole Network and Error---------------------\n");
 	
 	// get maximum number of nodes (maximum rows)
@@ -1471,7 +1347,7 @@ void AINetClass::displayAllNodes(double sumOfSquaredErrors)
 			// do the output magic
 			if (i <= this->getNumberOfNodesInLayer(j))
 			{
-				printf("%2i:%8.4f|", (this->getLayerStart(j) + i - 1), this->getNodeValue(this->getLayerStart(j) + i -1));
+				printf("%2zu:%8.4f|", (this->getLayerStart(j) + i - 1), this->getNodeValue(this->getLayerStart(j) + i -1));
 			}
 			else
 				printf("--:---.----|");
@@ -1520,7 +1396,7 @@ double AINetClass::updateWeights()
 	// OLD:
 	// sumOfSquaredErrors = aincNetwork.updateWeights();
 	// NEW:
-	for (int iLayer = this->getNumberOfLayers(); iLayer >=1; iLayer--)
+	for (size_t iLayer = this->getNumberOfLayers(); iLayer >=1; --iLayer)
 	{
 		sumOfSquaredErrors += this->updateWeightsInLayer(iLayer);
 	}
@@ -1627,17 +1503,19 @@ double AINetClass::getTrainingDataValue(size_t row, size_t column)
 	return tmpReturn;
 }
 
-double AINetClass::updateWeightsInLayer(int tmpLayer)
+double AINetClass::updateWeightsInLayer(signed int iTmpLayer)
 {
-	// updates the weight in specific layer
-	this->validLayer(tmpLayer);
+	/** Update the weights in the specified layer
+		\param tmpLayer The layer in question.
+	*/
+	size_t tmpLayer = this->validLayer(iTmpLayer);
 	size_t tmpLayerBegin = this->getLayerStart(tmpLayer);
 	size_t tmpLayerEnd = this->getLayerStart(tmpLayer, false);
 	
 	double sumOfSquaredError = 0.0;
 	size_t n = 0;
 
-	for (size_t iCurrentNode = tmpLayerBegin; iCurrentNode <= tmpLayerEnd; iCurrentNode++)
+	for (size_t iCurrentNode = tmpLayerBegin; iCurrentNode <= tmpLayerEnd; ++iCurrentNode)
 	{
 		double dErrorAtCurrentNode = 0.0;
 		// calculation of delta
@@ -1731,10 +1609,10 @@ std::string AINetClass::generateFileInput(std::string & strFileContents)
 
 bool AINetClass::recalculateInputDataPullList()
 {
-	if (this->iTrainingDataRowsMax > 0)
+	if (this->ptrAINDataContainer->getTrainingDataRowsMax() > 0)
 	{
 		this->inputDataPullList.clear();
-		this->inputDataPullList.resize(this->iTrainingDataRowsMax - abs(iTimePreviousRows));
+		this->inputDataPullList.resize(this->ptrAINDataContainer->getTrainingDataRowsMax() - iTimePreviousRows);
 		std::fill(this->inputDataPullList.begin(), this->inputDataPullList.end(), 0);
 		for (size_t i = 0; i < this->inputDataPullList.capacity(); i++)
 		{
@@ -1746,7 +1624,7 @@ bool AINetClass::recalculateInputDataPullList()
 			}
 		}
 	}
-	return (this->iTrainingDataRowsMax > 0);
+	return (this->ptrAINDataContainer->getTrainingDataRowsMax() > 0);
 }
 
 bool AINetClass::throwFailure(std::string tmpError,bool doexit)
@@ -1759,10 +1637,10 @@ bool AINetClass::throwFailure(std::string tmpError,bool doexit)
 	return true;
 }
 
-double AINetClass::calculateErrorMSE(int iLayer)
+double AINetClass::calculateErrorMSE(int iTmpLayer)
 {
 	// this function calculates the mean square error for specified layer
-	this->validLayer(iLayer);
+	size_t iLayer = this->validLayer(iTmpLayer);
 	double sumOfError = 0.0;
 	double n = 0.0;
 	for (size_t iCurrentNode = this->getLayerStart(iLayer); iCurrentNode <= this->getLayerStart(iLayer,false); iCurrentNode++)
@@ -1781,11 +1659,11 @@ size_t AINetClass::resizeVectors()
 	size_t tmpInputVectorSize = 0;
 	if (this->iTimeNumInputColumns == 0)
 	{
-		tmpInputVectorSize += this->iNumRealInputNodes * (1 + abs(this->iTimePreviousRows));
+		tmpInputVectorSize += this->iNumRealInputNodes * (1 + this->iTimePreviousRows);
 	}
 	else
 	{
-		tmpInputVectorSize += this->iNumRealInputNodes + this->iTimeNumInputColumns * abs(this->iTimePreviousRows);
+		tmpInputVectorSize += this->iNumRealInputNodes + this->iTimeNumInputColumns * this->iTimePreviousRows;
 	}
 	this->vdNetworkTopology.at(0) = tmpInputVectorSize;
 	for (size_t i = 1; i < vdNetworkTopology.size(); i++)
@@ -1798,9 +1676,12 @@ size_t AINetClass::resizeVectors()
 	return tmpInputVectorSize;
 }
 
-int AINetClass::validLayer(int & tmpLayer, bool tmpRemoveOffset)
+size_t AINetClass::validLayer(signed int tmpLayer)
 {
 	// returning a valid layer between 1 and vdNetworkTopology.size()
+	//Todo rewrite to make compatible with size_t 
+
+	size_t retLayer = 0;
 	if (tmpLayer < 0)
 	{
 		// first of all, make it positive.
@@ -1818,11 +1699,31 @@ int AINetClass::validLayer(int & tmpLayer, bool tmpRemoveOffset)
 		// refering to first layer
 		tmpLayer = 1;
 	}
-	// next part will remove the offset from the layer
-	if (tmpRemoveOffset)
+
+	retLayer = (size_t)tmpLayer; // force to size_t
+	if (retLayer != (size_t)tmpLayer) // verify if conversion was successfull
 	{
-		// it may not be below zero!
-		tmpLayer = max(0, tmpLayer - 1);
+		retLayer = 1;
+	}
+	return retLayer;
+}
+
+size_t AINetClass::validLayer(size_t& tmpLayer)
+{
+	/** This function will return a valid layer.
+		\param tmpLayer this is the layer to be tested.
+		\return Returns a vaild layer. (1 to maximum number of layers)
+	*/
+	// returning a valid layer between 1 and vdNetworkTopology.size()
+	if (tmpLayer > 0)
+	{
+		// great it is greater than 0, so the first (aka input layer ist 1)
+		tmpLayer = min((int)this->vdNetworkTopology.size(), tmpLayer);
+	}
+	else
+	{
+		// refering to first layer
+		tmpLayer = 1;
 	}
 	return tmpLayer;
 }

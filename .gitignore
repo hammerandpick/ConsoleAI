@@ -9,6 +9,8 @@
 
 # Added by hammerandpick
 *.csv
+*.xls
+*.xlsx
 [Ww]indows[Aa][Pp][Pp]/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
