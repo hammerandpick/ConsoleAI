@@ -52,7 +52,6 @@ public:
 	bool resetCounter();
 	bool IsNetworkReady();
 	bool autoGenerateInternalNetwork();
-	double NodeFunction(double weightedInput, size_t currentNodeID, bool derivative = false);
 	double updateWeights();
 	double getNodeValue(size_t tmpNode);
 	void TrainingDataColumnPush_Back(std::string tmpString);
@@ -84,6 +83,7 @@ public:
 	void setOptionThreadCombinatingMode(size_t iTCMode);
 	void setPercentVerification(double tmpPercentVerifiy);
 	void setTrainingRow(size_t iTmpRow);
+	void calculateLine(size_t iTmpRow);
 	
 	void sortNetwork();
 
@@ -96,7 +96,7 @@ public:
 	std::vector<std::vector<double>> *getTrainingData();
 	void shuffleTrainingData();
 
-	void trainLine();
+	
 	void trainNetwork(bool bSilent=false);
 	
 	std::vector<std::string> getErrorList();
@@ -151,7 +151,7 @@ private:
 	double dlearningRate = 0.2; // the default learning rate
 	double dWorstError = 0.0;
 	size_t iWorstErrorRow = 0;
-	std::string strInternalName = "UNKNOWN";
+	std::string strInternalName = "Sample Data for A OR B";
 	std::vector<std::string> vTrainingDataColumns={ "0" };
 	std::vector<size_t> inputDataPullList = { 0 };
 	std::vector<size_t> viLayerActivationFunction = { 0 };
@@ -163,6 +163,8 @@ private:
 	// functions
 	std::string generateFileOutput(std::string& strFileContents);
 	std::string generateFileInput(std::string& strFileContents);
+	bool IsDoubleCritical(double dToBeClassified);
+	std::string IsDoubleCritical(double dToBeClassified, std::string sText);
 	bool recalculateInputDataPullList();
 	bool throwFailure(std::string tmpError, bool doexit);
 	double getTrainingDataValue(size_t row, size_t column);
@@ -174,6 +176,8 @@ private:
 	size_t validLayer(signed int tmpLayer);
 	size_t validLayer(size_t& tmpLayer);
 
+	void loadTrainingLine();
+	double NodeFunction(double weightedInput, size_t currentNodeID, bool derivative = false);
 	std::string NodeFunctionXLS(size_t tmpNode, std::string tmpCalculatedInput);
 	std::string NodeFunctionJS(size_t tmpNode, std::string tmpCalculatedInput);
 

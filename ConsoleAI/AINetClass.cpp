@@ -510,7 +510,7 @@ void AINetClass::shuffleTrainingData()
 
 void AINetClass::activateNetwork()
 {
-	/** Perform calculation using current values in the network and ajust weights.
+	/** Perform calculation using current values in the network.
 	*/
 
 	size_t numHiddenLayers = this->getNumberOfLayers(true);
@@ -621,7 +621,16 @@ void AINetClass::setTrainingRow(size_t iTmpRow)
 {
 	// set the next training row 
 	this->iCounter = min(this->getTrainingDataRowsMax(),max(0,iTmpRow));
-	this->trainLine();
+	this->loadTrainingLine();
+}
+
+void AINetClass::calculateLine(size_t iTmpRow)
+{
+	/** calculate one row from training data set*/
+	this->setTrainingRow(iTmpRow);
+	this->loadTrainingLine();
+	this->activateNetwork();
+	this->printIO(-1.0);
 }
 
 void AINetClass::sortNetwork()
@@ -810,8 +819,6 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 		
 		fileResultingNetwork << "output network " << this->strInternalName << " with formula\n";
 
-		// TODO THIS PART DOES NOT WORK
-
 		/* DEBUG */
 		OutputDebugStringA("maximum number of layers:");
 		OutputDebugStringA(std::to_string(this->getNumberOfLayers()).c_str());
@@ -854,7 +861,7 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 							size_t iNumPrevLayerStart = this->getLayerStart(iLayer - 1);
 							for (size_t x = 1; x <= iNumNodesPrevLayer; x++)
 							{
-								tmpCurrentValue += "-" + this->getExcelColumn(iLayer) + std::to_string(x+1);// times 1 is due to first line content
+								tmpCurrentValue += "+" + this->getExcelColumn(iLayer) + std::to_string(x+1);// times 1 is due to first line content
 								tmpCurrentValue += "*" + std::to_string(this->vecWeights[iNumPrevLayerStart -1+x][iNumLayerStart - 1 + iNode]);// times weight
 							}
 
@@ -933,6 +940,11 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 		this->generateFileOutput(tmpFileContents);
 		fileResultingNetwork << tmpFileContents;
 
+		for (size_t i = 0; i < this->errorList.size(); ++i)
+		{
+			fileResultingNetwork << this->errorList.at(i) << "\n";
+		}
+
 		fileResultingNetwork.close();
 		this->vstrResultFilenames.push_back(cResultingNetworkFileName);
 	}
@@ -944,7 +956,10 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 
 void AINetClass::setActivationFunction(size_t typeOfActivationFunction, size_t specificLayer)
 {
-	// this function is used to set the activation function of all layer or for one specific layer (if 2nd parameter is set)
+	/** Is used to set the activation function of all layers or for a specific layer.
+		\param typeOfActivationFunction selects the type of the activation function
+		\param specificLayer (optional) to be used if this only applies to a specific layer
+	*/
 	if (specificLayer > 0)
 	{
 		// set activation function for specified layer
@@ -1110,9 +1125,9 @@ void AINetClass::createNetwork(std::vector<size_t> tmpviNetwork)
 	}
 }
 
-void AINetClass::trainLine()
+void AINetClass::loadTrainingLine()
 {
-	/** This function is used to perform the training calculation of one line from the dataset.
+	/** Used to fetch training data from storage and put it into calculation space.
 	First Copy input node data from matrix to input notes.
 	Second perform training with data.
 	*/
@@ -1165,9 +1180,7 @@ void AINetClass::trainNetwork(bool bSilent)
 	}
 	while (this->continueCalculation())
 	{
-			// start trainging with data loaded from file
-			this->trainLine();
-
+		this->loadTrainingLine(); 
 		this->activateNetwork();
 
 		double sumOfSquaredErrors = 0.0;
@@ -1607,6 +1620,40 @@ std::string AINetClass::generateFileInput(std::string & strFileContents)
 	return strFileContents;
 }
 
+bool AINetClass::IsDoubleCritical(double dToBeClassified)
+{
+	/** This function is used to check if this is a critical floating point number
+		\param dToBeClassified Number to be checked
+		\return True for critical number
+	*/
+	switch (std::fpclassify(dToBeClassified)) {
+		case FP_INFINITE: return true;
+		case FP_NAN: return true;
+		case FP_SUBNORMAL: return true;
+		case FP_ZERO: return false;
+		case FP_NORMAL: return false;
+		default: return false;
+	}
+}
+
+std::string AINetClass::IsDoubleCritical(double dToBeClassified, std::string sText)
+{
+	/** This function is used to check if this is a critical floating point number
+		\param dToBeClassified Number to be checked
+		\param sText text to be attatched
+		\return True for critical number
+	*/
+	switch (std::fpclassify(dToBeClassified)) {
+		case FP_INFINITE: return sText + "INFINITE";
+		case FP_NAN: return sText + "NOT A NUMBER";
+		case FP_SUBNORMAL: return sText + "SUBNORMAL";
+		case FP_ZERO: return sText + "ZERO";
+		case FP_NORMAL: return sText + "NORMAL";;
+		default: return sText + "NORMAL";;
+	}
+	return std::string();
+}
+
 bool AINetClass::recalculateInputDataPullList()
 {
 	if (this->ptrAINDataContainer->getTrainingDataRowsMax() > 0)
@@ -1730,7 +1777,11 @@ size_t AINetClass::validLayer(size_t& tmpLayer)
 
 double AINetClass::NodeFunction(double weightedInput, size_t currentNodeID, bool derivative)
 {
-	// this function changes the activation function of the nodes
+	/** Calculates the output of a given node
+		\param weightedInput Input of this node
+		\param currentNodeID a specific node
+		\param derivative (optional) set to true if calculation is performed backwards
+	*/
 	double dActivationFunctionResult = 0.0;
 
 	switch (this->getActivationFunction(currentNodeID))
@@ -1776,7 +1827,7 @@ std::string AINetClass::NodeFunctionXLS(size_t tmpNode, std::string tmpCalculate
 		break;
 	case 2:
 		//BIP
-		myActivationFunction = "=(1-EXP(-%d))/(1+EXP(-%d))";
+		myActivationFunction = "=(1-EXP(-1*(%d)))/(1+EXP(-1*(%d)))";
 		break;
 	case 3:
 		//reLu
@@ -1784,10 +1835,10 @@ std::string AINetClass::NodeFunctionXLS(size_t tmpNode, std::string tmpCalculate
 		break;
 	case 4:
 		// using linear activation function on output layer
-		myActivationFunction = "=1.0/(1.0+EXP(-%d))";
+		myActivationFunction = "=1.0/(1.0+EXP(-1*(%d)))";
 		break;
 	default:
-		myActivationFunction = "=1.0/(1.0+EXP(-%d))";
+		myActivationFunction = "=1.0/(1.0+EXP(-1*(%d)))";
 		break;
 	}
 

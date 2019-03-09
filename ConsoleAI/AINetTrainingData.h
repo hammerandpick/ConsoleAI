@@ -53,10 +53,9 @@ private:
 	size_t intLinesRead = 4;
 	size_t intTrainingDataColumsMax = 0;
 	size_t intTrainingDataRowsMax = 0;
-	std::vector<std::string> vStrTrainingDataColumns = { "no data loaded", "standard-xor" };
+	std::vector<std::string> vStrTrainingDataColumns = { "unused", "Value A", "Value B", "A OR B"};
 	std::vector<size_t> vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
-	std::vector<std::vector<double>> vvTrainingDataMatrix = { {0.0,0.0,1.0},{0.0,1.0,0.0},{1.0,0.0,0.0},{1.0,1.0,0.0} }; // standard xor training data
-
+	std::vector<std::vector<double>> vvTrainingDataMatrix = { {1.0,0.0,0.0,0.0},{1.0,0.0,1.0,1.0},{1.0,1.0,0.0,1.0},{1.0,1.0,1.0,1.0} }; // standard xor training data
 
 	/* functions */
 

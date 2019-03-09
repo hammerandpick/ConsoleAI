@@ -14,9 +14,6 @@ AINetTrainingData::AINetTrainingData()
 	/** Constructor for AINetTrainingData
 	  * \relates AINetTrainingData(double tdm)
 	*/
-
-	this->vvTrainingDataMatrix = { {1.0,0.0,0.0,1.0},{1.0,0.0,1.0,0.0},{1.0,1.0,0.0,0.0},{1.0,1.0,1.0,1.0} }; // standard xor training data
-	this->vdNetworkTopology = { 2,2,1 }; // standard xor training data network topology
 }
 
 AINetTrainingData::~AINetTrainingData()
