@@ -102,6 +102,13 @@ size_t AINetTrainingData::getNumberOfOutputNodes()
 	return this->vdNetworkTopology.back();
 }
 
+size_t AINetTrainingData::getTimeMode()
+{
+	/** Function returns AINetTrainingData->intTimeDataMode 
+		\return 1 for none\n 2 for date \n 3 for time \n 4 for date and time */
+	return this->intTimeDataMode;
+}
+
 double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 {
 	/** This function returns the value of the training data in \p colum of \p row.
@@ -377,7 +384,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 
 		std::vector<double> vdLocalVector(1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back());
 		std::string loadedNumber = "";
-
+		std::string tmpIsTimeData = "";
 		// now start looking for maxiterations in aidatafile
 		// and setting maximum iterations
 		std::getline(theAIDataFile, theLine);
@@ -409,6 +416,15 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			case 5:
 				// Todo change this
 				this->dPercentVerificationData = std::min(0.0,std::max(1.0,atof(theLine.substr(0, theFirstElement).c_str())));
+				break;
+			case 6:
+				tmpIsTimeData = theLine.substr(0, theFirstElement);
+				std::transform(tmpIsTimeData.begin(), tmpIsTimeData.end(), tmpIsTimeData.begin(), ::tolower); 
+				tmpIsTimeData.erase(tmpIsTimeData.find_last_not_of(" \n\r\t") + 1);
+				if (tmpIsTimeData.compare("datetime") == 0)	this->intTimeDataMode = 4;
+				else if (tmpIsTimeData.compare("date") == 0) this->intTimeDataMode = 2;
+				else if (tmpIsTimeData.compare("time") == 0) this->intTimeDataMode = 3;
+				else this->intTimeDataMode = 1;
 				break;
 			default:
 				break;
@@ -449,7 +465,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			theFirstElement = 0;
 			vdLocalVector.push_back(1.0); // first element is base/threshold value and always set to 1.0
 
-										  // looking for first element
+			// looking for first element
 			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
 			else theFirstElement = (int)theLine.length();
 

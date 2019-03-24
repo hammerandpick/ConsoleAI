@@ -15,6 +15,7 @@ public:
 	size_t getTotalLines();
 	size_t getNumberOfInputNodes();
 	size_t getNumberOfOutputNodes();
+	size_t getTimeMode();
 	double getTrainingDataValue(size_t column, size_t row);
 	size_t getTrainingRowSizeT(size_t row);
 	std::vector<size_t> getNetworkTopology();
@@ -44,6 +45,7 @@ private:
 	
 	std::string strAIDataFileHeader = "";
 	std::string strAIDataFileName = "";
+	size_t intTimeDataMode = 1; // 1= no specific time data mode; 2=Date; 3=Time; 4=Date and Time
 	size_t intMaxIterations = 1000;
 	size_t intTimePreviousRows = 0;
 	size_t intTimeNextRows = 0;

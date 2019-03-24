@@ -508,6 +508,30 @@ void AINetClass::shuffleTrainingData()
 	std::random_shuffle(this->inputDataPullList.begin(), this->inputDataPullList.end());
 }
 
+std::string AINetClass::getTrainingDataOptionTimeString()
+{
+	/** Function returns a string "none", "date", "time" or "datetime" depending on what mode was set in training data.
+		\return std::string 
+	*/
+	std::string strReturn = "none";
+	switch (this->ptrAINDataContainer->getTimeMode())
+	{
+	case 2:
+		strReturn = "date";
+		break;
+	case 3:
+		strReturn = "time";
+		break;
+	case 4:
+		strReturn = "datetime";
+		break;
+	default:
+		strReturn = "none";
+		break;
+	}
+	return strReturn;
+}
+
 void AINetClass::activateNetwork()
 {
 	/** Perform calculation using current values in the network.
@@ -1079,7 +1103,6 @@ void AINetClass::combineNetworks(AINetClass *ptrAiNetClass, std::mutex & ptrMute
 	{
 		// combine all data
 		// todo write data combination code.
-		// todo this is not ready yet
 	}
 
 	Sleep(1000);

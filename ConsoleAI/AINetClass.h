@@ -95,6 +95,7 @@ public:
 	/* Training Data */
 	std::vector<std::vector<double>> *getTrainingData();
 	void shuffleTrainingData();
+	std::string getTrainingDataOptionTimeString();
 
 	
 	void trainNetwork(bool bSilent=false);
