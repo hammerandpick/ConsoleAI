@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <ctime>
 #include "CodeFromWeb.h"
 #include "AINetTrainingData.h"
 
@@ -133,6 +134,66 @@ double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 		std::cerr << "row out of range: " << row;
 	}
 	return dReturn;
+}
+
+std::vector<double> AINetTrainingData::getInputDateTime(size_t column)
+{
+	/** This function is used to convert the date and/or time to input nodes for the network.
+	\n\tDate an time  is splitted into nodes
+		\param column fetch data from this line.
+	*/
+
+	/** TODO: Rewrite this to a one time conversion of training data
+	apply as a transformation for the stored data*/
+
+	struct tm tmTimeTemp;
+	std::vector<double> vdTime;
+	vdTime.clear();
+	if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
+	{
+		tmTimeTemp.tm_year = this->getTrainingDataValue(column, 1);
+		tmTimeTemp.tm_mon = this->getTrainingDataValue(column, 2);
+		tmTimeTemp.tm_mday = this->getTrainingDataValue(column, 3);
+	}
+	if (this->intTimeDataMode == 3 || this->intTimeDataMode == 4)
+	{
+		int iTimeOff = 0;
+		if (this->intTimeDataMode == 4)
+		{
+			// date is stored before time therefore time is with offset 3 
+			iTimeOff = 3;
+		}
+		tmTimeTemp.tm_hour = this->getTrainingDataValue(column, iTimeOff + 1);
+		tmTimeTemp.tm_min = this->getTrainingDataValue(column, iTimeOff + 2);
+		tmTimeTemp.tm_sec = this->getTrainingDataValue(column, iTimeOff + 3);
+	}
+	mktime(&tmTimeTemp);
+	if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
+	{
+		// this is to expand the date
+		vdTime.push_back(1.0); // year as dummy
+		vdTime.push_back(tmTimeTemp.tm_mon / 12.0); // month as value from 0-1 
+		vdTime.push_back(tmTimeTemp.tm_mday / 31.0); // day as value from 0-1
+		vdTime.push_back(tmTimeTemp.tm_wday / 6.0); // wday as value from 0-1
+		vdTime.push_back(tmTimeTemp.tm_yday / 366.0); // day of year (+1 for longer switching years)
+		vdTime.push_back(tmTimeTemp.tm_wday != 1 ? 0 : 1); // monday
+		vdTime.push_back(tmTimeTemp.tm_wday != 2 ? 0 : 1); // tuesday
+		vdTime.push_back(tmTimeTemp.tm_wday != 3 ? 0 : 1); // wednesday
+		vdTime.push_back(tmTimeTemp.tm_wday != 4 ? 0 : 1); //thursday
+		vdTime.push_back(tmTimeTemp.tm_wday != 5 ? 0 : 1); // friday
+		vdTime.push_back(tmTimeTemp.tm_wday != 6 ? 0 : 1); // saturday
+		vdTime.push_back(tmTimeTemp.tm_wday != 0 ? 0 : 1); // sunday 0=false 1=true
+	}
+	if (this->intTimeDataMode == 3 || this->intTimeDataMode == 4)
+	{
+		// now expand the time over the day
+		vdTime.push_back(tmTimeTemp.tm_hour / 24.0);
+		vdTime.push_back(tmTimeTemp.tm_min / 60.0);
+		vdTime.push_back(tmTimeTemp.tm_sec / 60.0);
+		vdTime.push_back(tmTimeTemp.tm_hour / 24 * tmTimeTemp.tm_min / 60.0 * tmTimeTemp.tm_sec / 60.0); // time as seconds of day
+		vdTime.push_back(tmTimeTemp.tm_hour <= 11 ? 0 : 1); // morning or evening
+	}
+	return vdTime;
 }
 
 size_t AINetTrainingData::getTrainingRowSizeT(size_t row)
@@ -463,7 +524,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			// clear vector
 			vdLocalVector.clear();
 			theFirstElement = 0;
-			vdLocalVector.push_back(1.0); // first element is base/threshold value and always set to 1.0
+			vdLocalVector.push_back((double)this->intTimeDataMode); // first element is base/threshold value and always set to 1.0
 
 			// looking for first element
 			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
@@ -599,7 +660,7 @@ std::string AINetTrainingData::TrainingDataColumnName(size_t tmpColumn, bool sho
 	}
 	else
 	{
-		if ((tmpColumn >= 0) && (tmpColumn < vStrTrainingDataColumns.size()))
+		if ((tmpColumn >= 0) && (tmpColumn < this->vStrTrainingDataColumns.size()))
 		{
 			// read a value if it is within valid range.
 			tmpString = this->vStrTrainingDataColumns.at(tmpColumn);

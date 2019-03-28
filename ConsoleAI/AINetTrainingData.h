@@ -17,6 +17,7 @@ public:
 	size_t getNumberOfOutputNodes();
 	size_t getTimeMode();
 	double getTrainingDataValue(size_t column, size_t row);
+	std::vector<double> getInputDateTime(size_t column);
 	size_t getTrainingRowSizeT(size_t row);
 	std::vector<size_t> getNetworkTopology();
 	std::vector<std::vector<double>> getTrainingDataMatrix();

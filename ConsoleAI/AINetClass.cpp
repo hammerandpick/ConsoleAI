@@ -1519,7 +1519,10 @@ bool AINetClass::autoGenerateInternalNetwork()
 
 double AINetClass::getTrainingDataValue(size_t row, size_t column)
 {
-	// safeAccesstoTrainingData
+	/** This function is used to access the training data in a safe way 
+		\param row select this row
+		\param column select this column
+		*/
 	double tmpReturn=0;
 	if (row < this->ptrAINDataContainer->getTrainingDataRowsMax())
 	{

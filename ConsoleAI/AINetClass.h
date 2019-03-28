@@ -164,6 +164,7 @@ private:
 	// functions
 	std::string generateFileOutput(std::string& strFileContents);
 	std::string generateFileInput(std::string& strFileContents);
+
 	bool IsDoubleCritical(double dToBeClassified);
 	std::string IsDoubleCritical(double dToBeClassified, std::string sText);
 	bool recalculateInputDataPullList();
