@@ -293,9 +293,7 @@ void pause()
 
 void printTrainingData(AINetClass *ptrAINC)
 {
-	/* this function is used to print training data */
-	
-	/* print training data to standard output */
+	/** This function is used to print training data to standard output. */
 
 	const std::vector<std::vector<double>> *vvTmpTrainingData = ptrAINC->getTrainingData();
 	std::vector<double> vTrainingDataRow;

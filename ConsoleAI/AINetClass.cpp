@@ -1040,8 +1040,7 @@ void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed, bool bDele
 		//variables
 		size_t tmpTotalNumberNodes = 0;
 
-		// seeding random number generator
-		srand(iRandSeed);
+		srand((unsigned int)iRandSeed); // problems with conversion don't matter because it's random
 
 		//function
 		tmpTotalNumberNodes = this->NUMNODES();
