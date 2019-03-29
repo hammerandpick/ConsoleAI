@@ -1040,8 +1040,7 @@ void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed, bool bDele
 		//variables
 		size_t tmpTotalNumberNodes = 0;
 
-		// seeding random number generator
-		srand(iRandSeed);
+		srand((unsigned int)iRandSeed); // problems with conversion don't matter because it's random
 
 		//function
 		tmpTotalNumberNodes = this->NUMNODES();
@@ -1519,7 +1518,10 @@ bool AINetClass::autoGenerateInternalNetwork()
 
 double AINetClass::getTrainingDataValue(size_t row, size_t column)
 {
-	// safeAccesstoTrainingData
+	/** This function is used to access the training data in a safe way 
+		\param row select this row
+		\param column select this column
+		*/
 	double tmpReturn=0;
 	if (row < this->ptrAINDataContainer->getTrainingDataRowsMax())
 	{

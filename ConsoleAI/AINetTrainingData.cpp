@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "stdafx.h"
+#include <ctime>
 #include <algorithm>    // std::random_shuffle
 #include <vector>
 #include <iostream>
@@ -91,7 +92,13 @@ size_t AINetTrainingData::getNumberOfInputNodes()
 	/** This returns the number of input nodes from the network topology
 		\return Number of input nodes.	
 	*/
-	return this->vdNetworkTopology.front();
+
+	size_t iReturn = this->iNumberOfInputNodes;
+	if (this->bHasTiming)
+	{
+		iReturn = this->iNumberOfInputNodes + this->vvTimingData.size();
+	}
+	return iReturn;
 }
 
 size_t AINetTrainingData::getNumberOfOutputNodes()
@@ -99,7 +106,12 @@ size_t AINetTrainingData::getNumberOfOutputNodes()
 	/** This function returns the number of output nodes from network topology of training data file
 		\return The number of output nodes.
 	*/
-	return this->vdNetworkTopology.back();
+	size_t iReturn = this->iNumberOfOutputNodes;
+	if (this->bHasTiming)
+	{
+		// no changes
+	}
+	return iReturn;
 }
 
 size_t AINetTrainingData::getTimeMode()
@@ -135,6 +147,67 @@ double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 	return dReturn;
 }
 
+std::vector<double> AINetTrainingData::getInputDateTime(size_t row)
+{
+	/** This function is used to convert the date and/or time to input nodes for the network.
+	\n\tDate an time  is splitted into nodes
+		\param column fetch data from this line.
+	*/
+
+	struct tm tmTimeTemp;
+	std::vector<double> vdTime;
+	vdTime.clear();
+	
+	if (row < this->vvTrainingDataMatrix.size()) // check if column is in valid range
+	{
+		if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
+		{
+			tmTimeTemp.tm_year = (int)this->vvTrainingDataMatrix.at(row).at(1);
+			tmTimeTemp.tm_mon = (int)this->vvTrainingDataMatrix.at(row).at(2);
+			tmTimeTemp.tm_mday = (int)this->vvTrainingDataMatrix.at(row).at(3);
+		}
+		if (this->intTimeDataMode == 3 || this->intTimeDataMode == 4)
+		{
+			int iTimeOff = 0;
+			if (this->intTimeDataMode == 4)
+			{
+				// date is stored before time therefore time is with offset 3 
+				iTimeOff = 3;
+			}
+			tmTimeTemp.tm_hour = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 1);
+			tmTimeTemp.tm_min = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 2);
+			tmTimeTemp.tm_sec = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 3);
+		}
+		mktime(&tmTimeTemp);
+		if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
+		{
+			// this is to expand the date
+			vdTime.push_back(1.0); // year as dummy
+			vdTime.push_back(tmTimeTemp.tm_mon / 12.0); // month as value from 0-1 
+			vdTime.push_back(tmTimeTemp.tm_mday / 31.0); // day as value from 0-1
+			vdTime.push_back(tmTimeTemp.tm_wday / 6.0); // wday as value from 0-1
+			vdTime.push_back(tmTimeTemp.tm_yday / 366.0); // day of year (+1 for longer switching years)
+			vdTime.push_back(tmTimeTemp.tm_wday != 1 ? 0 : 1); // monday
+			vdTime.push_back(tmTimeTemp.tm_wday != 2 ? 0 : 1); // tuesday
+			vdTime.push_back(tmTimeTemp.tm_wday != 3 ? 0 : 1); // wednesday
+			vdTime.push_back(tmTimeTemp.tm_wday != 4 ? 0 : 1); //thursday
+			vdTime.push_back(tmTimeTemp.tm_wday != 5 ? 0 : 1); // friday
+			vdTime.push_back(tmTimeTemp.tm_wday != 6 ? 0 : 1); // saturday
+			vdTime.push_back(tmTimeTemp.tm_wday != 0 ? 0 : 1); // sunday 0=false 1=true
+		}
+		if (this->intTimeDataMode == 3 || this->intTimeDataMode == 4)
+		{
+			// now expand the time over the day
+			vdTime.push_back(tmTimeTemp.tm_hour / 24.0);
+			vdTime.push_back(tmTimeTemp.tm_min / 60.0);
+			vdTime.push_back(tmTimeTemp.tm_sec / 60.0);
+			vdTime.push_back(tmTimeTemp.tm_hour / 24 * tmTimeTemp.tm_min / 60.0 * tmTimeTemp.tm_sec / 60.0); // time as seconds of day
+			vdTime.push_back(tmTimeTemp.tm_hour <= 11 ? 0 : 1); // morning or evening
+		}
+	}
+	return vdTime;
+}
+
 size_t AINetTrainingData::getTrainingRowSizeT(size_t row)
 {
 	/** This will return the size of the specified \p row.
@@ -160,16 +233,16 @@ std::vector<size_t> AINetTrainingData::getNetworkTopology()
 
 std::vector<std::vector<double>> AINetTrainingData::getTrainingDataMatrix()
 {
-	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
-		\return a new training data object.
+	/** This function returns the training data as new object.
+		\return std::vector<std::vector<double>> a new training data object.
 	*/
 	return this->vvTrainingDataMatrix;
 }
 
 std::vector<std::vector<double>>* AINetTrainingData::ptrTrainingDataMatix()
 {
-	/** This function returns the training data as new object. This should not be used. TODO: Check and delete.
-		\return a new training data object.
+	/** This function returns a pointer to training data. 
+		\return std::vector<std::vector<double>>* pointer to training data.
 	*/
 	return &this->vvTrainingDataMatrix;
 }
@@ -300,6 +373,38 @@ std::vector<double> AINetTrainingData::splitStringToDouble(const std::string & s
 	return strElements;
 }
 
+bool AINetTrainingData::createTimingData()
+{
+	/** This function is used to perform the creation of timing data.
+	It will load the date value from the training data.
+	Then it will convert these data do input data for the network.
+	The resulting data may have a variable size.
+	The network topology is to be reset afterwards.
+	*/
+	this->vvTimingData.clear();
+
+	this->vvTimingData.reserve(this->vvTrainingDataMatrix.size());
+	
+	if (this->intTimeDataMode > 1)
+	{
+		// there is timing data present
+		for (size_t i = 0; i < this->vvTrainingDataMatrix.size(); ++i)
+		{
+			this->vvTimingData.push_back(this->getInputDateTime(i));
+		}
+	}
+
+	if (this->vvTimingData.size() == this->vvTrainingDataMatrix.size())
+	{
+		this->bHasTiming = true;
+	}
+	else
+	{
+		this->bHasTiming = false;
+	}
+	return this->bHasTiming;
+}
+
 void AINetTrainingData::closeTrainingDataFile(std::ifstream &ptrDataFile)
 {
 	/** This function is used to close the training data file after reading.
@@ -381,8 +486,10 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			
 		}
 		this->vdNetworkTopology = this->splitStringToSizeT(theLine, ",");
+		this->iNumberOfInputNodes = this->vdNetworkTopology.front();
+		this->iNumberOfOutputNodes = this->vdNetworkTopology.back();
 
-		std::vector<double> vdLocalVector(1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back());
+		std::vector<double> vdLocalVector(1 + this->iNumberOfInputNodes + this->iNumberOfOutputNodes);
 		std::string loadedNumber = "";
 		std::string tmpIsTimeData = "";
 		// now start looking for maxiterations in aidatafile
@@ -415,7 +522,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 				break;
 			case 5:
 				// Todo change this
-				this->dPercentVerificationData = std::min(0.0,std::max(1.0,atof(theLine.substr(0, theFirstElement).c_str())));
+				this->dPercentVerificationData = std::min(0.0, std::max(1.0, atof(theLine.substr(0, theFirstElement).c_str())));
 				break;
 			case 6:
 				tmpIsTimeData = theLine.substr(0, theFirstElement);
@@ -463,7 +570,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			// clear vector
 			vdLocalVector.clear();
 			theFirstElement = 0;
-			vdLocalVector.push_back(1.0); // first element is base/threshold value and always set to 1.0
+			vdLocalVector.push_back((double)this->intTimeDataMode); // first element is base/threshold value and always set to 1.0
 
 			// looking for first element
 			if (theLine.find_first_of(",") != theLine.npos) theFirstElement = (int)theLine.find_first_of(",");
@@ -599,7 +706,7 @@ std::string AINetTrainingData::TrainingDataColumnName(size_t tmpColumn, bool sho
 	}
 	else
 	{
-		if ((tmpColumn >= 0) && (tmpColumn < vStrTrainingDataColumns.size()))
+		if ((tmpColumn >= 0) && (tmpColumn < this->vStrTrainingDataColumns.size()))
 		{
 			// read a value if it is within valid range.
 			tmpString = this->vStrTrainingDataColumns.at(tmpColumn);
