@@ -53,6 +53,7 @@ public:
 	bool IsNetworkReady();
 	bool autoGenerateInternalNetwork();
 	double updateWeights();
+	double getVersion();
 	double getNodeValue(size_t tmpNode);
 	void TrainingDataColumnPush_Back(std::string tmpString);
 	void activateNetwork();
@@ -107,6 +108,7 @@ private:
 	// Constants
 
 	double E = 2.71828;
+	double dVersion = 0.20190422;
 
 	// variables
 	std::vector<double> vecValues = { 0.0 }; // vector containing values including input

@@ -31,7 +31,6 @@ double MOMENTUM = 0.0;
 size_t theAIDataFilePos = 0;
 char theAIWeightsFileName[] = "weights.aiweights.csv";
 char *cThisFileName;
-const double VERSION = 0.20190221;
 bool optionsAuto = false;
 bool optionsWeightSave = false;
 bool optionsAllNodes = false;
@@ -65,7 +64,7 @@ int main(int argc, char *argv[], char *env[]) {
 	*/
 	// Welcome Screen
 	printf("Neural Network Program\n(%s)\n", argv[0]);
-	printf("Version:%10.8f \n\n--- OPTIONS ---", VERSION);
+	printf("Version:%10.8f \n\n--- OPTIONS ---", aincNetwork.getVersion());
 
 	atexit(leaveApplication);
 

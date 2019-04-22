@@ -973,7 +973,8 @@ void AINetClass::saveResultingNetwork(size_t iNumber)
 	}
 	catch (...) {
 		fileResultingNetwork.close();
-		this->throwFailure("Error while saving data." + strerror_s(clocalerror, errno), false);
+		//TODO This is in conflict with Windows UWP App. 
+		//this->throwFailure("Error while saving data." + strerror_s(clocalerror, errno), false);
 	}
 }
 
@@ -1436,6 +1437,14 @@ double AINetClass::updateWeights()
 		sumOfSquaredErrors += this->updateWeightsInLayer(iLayer);
 	}
 	return sumOfSquaredErrors;
+}
+
+double AINetClass::getVersion()
+{
+	/** this function returns the Version of the AINetClass
+		\return double Version
+	*/
+	return this->dVersion;
 }
 
 double AINetClass::getNodeValue(size_t tmpNode)
