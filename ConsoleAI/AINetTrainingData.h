@@ -1,13 +1,23 @@
 #pragma once
 #include "CodeFromWeb.h"
 
+/** WORKAROUND FOR WinGUI */
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+
+/** END WORKAROUND FOR WinGUI */
+
 class AINetTrainingData
 {
 public:
 	AINetTrainingData();
 	~AINetTrainingData();
 
-	
 	size_t getTrainingDataRowsMax(bool bReload=false);
 	size_t getTrainingDataColumnsMax(bool bRecount=false);
 	size_t getTrainingDataBegin();
@@ -16,15 +26,14 @@ public:
 	size_t getNumberOfInputNodes();
 	size_t getNumberOfOutputNodes();
 	size_t getTimeMode();
-	double getTrainingDataValue(size_t column, size_t row);
-	std::vector<double> getInputDateTime(size_t column);
+	double getTrainingDataValue(size_t column, size_t row, bool bRaw = false);
+	std::vector<double> getInputDateTime(size_t row);
 	size_t getTrainingRowSizeT(size_t row);
-	std::vector<size_t> getNetworkTopology();
+	std::vector<size_t> getNetworkTopology(bool bFromData = false);
 	std::vector<std::vector<double>> getTrainingDataMatrix();
 	std::vector<std::vector<double>>* ptrTrainingDataMatix();
 	std::string getTrainingDataFileName();
 	std::string setTrainingDataFileName(std::string strFileName);
-
 
 	bool setOptionCSVGermanStyle(bool bGerStyle);
 	bool setPreferredNetworkTopology(std::string strPref);
@@ -40,7 +49,6 @@ public:
 	
 
 private:
-	
 	/* data file variables */
 	bool bOptionCSVGER = false;  
 	std::string strAIDataFileHeader = "";
@@ -58,7 +66,8 @@ private:
 	size_t intTrainingDataRowsMax = 0;
 	
 	/* data storage */
-	std::vector<std::vector<double>> vvTrainingDataMatrix = { {1.0,0.0,0.0,0.0},{1.0,0.0,1.0,1.0},{1.0,1.0,0.0,1.0},{1.0,1.0,1.0,1.0} }; // standard xor training data
+	std::vector<std::vector<double>> vvLoadedData = { {1.0,0.0,0.0,0.0},{1.0,0.0,1.0,1.0},{1.0,1.0,0.0,1.0},{1.0,1.0,1.0,1.0} }; // standard xor training data
+	std::vector<std::vector<double>> vvCalculationData = { {1.0,0.0,0.0,0.0},{1.0,0.0,1.0,1.0},{1.0,1.0,0.0,1.0},{1.0,1.0,1.0,1.0} };
 	std::vector<std::vector<double>> vvTimingData = { {0.0} }; // this is used for expanding training data to timing data.
 	
 	/* data information */

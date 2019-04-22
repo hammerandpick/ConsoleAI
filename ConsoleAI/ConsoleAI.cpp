@@ -187,6 +187,7 @@ int main(int argc, char *argv[], char *env[]) {
 			strFile = aincNetwork.getDataFileName();
 			break;
 		}
+		printf("file %s selected.\n", strFile.c_str());
 		aincNetwork.setDataFileName(strFile);
 		iFileErrors = ainTrainingData->loadTrainingData(strFile);
 	}

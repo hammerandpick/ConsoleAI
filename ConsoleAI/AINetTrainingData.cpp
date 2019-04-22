@@ -19,7 +19,9 @@ AINetTrainingData::AINetTrainingData()
 
 AINetTrainingData::~AINetTrainingData()
 {
-	this->vvTrainingDataMatrix.clear();
+	this->vvLoadedData.clear();
+	this->vvTimingData.clear();
+	this->vvCalculationData.clear();
 	this->vdNetworkTopology.clear();
 }
 
@@ -34,7 +36,7 @@ size_t AINetTrainingData::getTrainingDataRowsMax(bool bReload)
 
 	if (this->intTrainingDataRowsMax == 0 || bReload)
 	{
-		this->intTrainingDataRowsMax = llround((this->vvTrainingDataMatrix.size() - this->intTimeNextRows - this->intTimePreviousRows)*(1 - this->dPercentVerificationData));
+		this->intTrainingDataRowsMax = llround((this->vvCalculationData.size() - this->intTimeNextRows - this->intTimePreviousRows)*(1 - this->dPercentVerificationData));
 	}
 
 	return this->intTrainingDataRowsMax;
@@ -52,9 +54,9 @@ size_t AINetTrainingData::getTrainingDataColumnsMax(bool bRecount)
 	if ((this->intTrainingDataColumsMax == 0) || bRecount)
 	{
 		// crawl all date for longest column
-		for (size_t i = 0; i < this->vvTrainingDataMatrix.size(); ++i)
+		for (size_t i = 0; i < this->vvCalculationData.size(); ++i)
 		{
-			size_t intTempSize = this->vvTrainingDataMatrix.at(i).size();
+			size_t intTempSize = this->vvCalculationData.at(i).size();
 			if (intTempSize > intMaxColumns)
 			{
 				intMaxColumns = intTempSize;
@@ -72,6 +74,7 @@ size_t AINetTrainingData::getTrainingDataBegin()
 {
 	/** This function is used to calculate the start of the training data. It will skip the number of defined previous rows, which will be used in calculation. Data has to be in ascending order.
 	*/
+
 	return (size_t)this->intTimePreviousRows;
 }
 
@@ -79,6 +82,7 @@ size_t AINetTrainingData::getTrainingDataEnd()
 {
 	/** This function is used to calculate the end of the training data. It will skip the number of defined next rows, which will be used in calculation. Data has to be in ascending order.
 	*/
+
 	return (size_t)this->vdNetworkTopology.size() - (size_t)this->intTimeNextRows;
 }
 
@@ -106,6 +110,7 @@ size_t AINetTrainingData::getNumberOfOutputNodes()
 	/** This function returns the number of output nodes from network topology of training data file
 		\return The number of output nodes.
 	*/
+
 	size_t iReturn = this->iNumberOfOutputNodes;
 	if (this->bHasTiming)
 	{
@@ -118,26 +123,51 @@ size_t AINetTrainingData::getTimeMode()
 {
 	/** Function returns AINetTrainingData->intTimeDataMode 
 		\return 1 for none\n 2 for date \n 3 for time \n 4 for date and time */
+
 	return this->intTimeDataMode;
 }
 
-double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
+double AINetTrainingData::getTrainingDataValue(size_t column, size_t row, bool bRaw)
 {
 	/** This function returns the value of the training data in \p colum of \p row.
 		\param column The colum to be returned.
 		\param row The row to be retrned.
+		\param bRaw (optional) use raw data
 		\return Value of \p column and \p row.
 	*/
+
 	double dReturn = 0.0;
-	if (row < this->vvTrainingDataMatrix.size())
+	if (row < this->vvCalculationData.size())
 	{
-		if (column < this->vvTrainingDataMatrix.at(row).size())
+		if(bHasTiming)
 		{
-			dReturn= this->vvTrainingDataMatrix.at(row).at(column);
+			size_t iTmpTDSize= this->vvTimingData.at(row).size();
+			if (column < this->vvCalculationData.at(row).size() + iTmpTDSize) // add the timing data rows
+			{
+				if (row < iTmpTDSize) // check for timing data first
+				{
+					dReturn = this->vvTimingData.at(row).at(column);	// use timing data
+				}
+				else
+				{
+					dReturn = this->vvTimingData.at(row).at(column - iTmpTDSize); // find column is iTmpTDSize too big.
+				}
+			}
+			else
+			{
+				std::cerr << "column out of range: " << column;
+			}
 		}
 		else
 		{
-			std::cerr << "column out of range: " << column;
+			if (column < this->vvCalculationData.at(row).size())
+			{
+				dReturn = this->vvCalculationData.at(row).at(column);
+			}
+			else
+			{
+				std::cerr << "column out of range: " << column;
+			}
 		}
 	}
 	else
@@ -150,33 +180,34 @@ double AINetTrainingData::getTrainingDataValue(size_t column, size_t row)
 std::vector<double> AINetTrainingData::getInputDateTime(size_t row)
 {
 	/** This function is used to convert the date and/or time to input nodes for the network.
-	\n\tDate an time  is splitted into nodes
-		\param column fetch data from this line.
+		Date and time is splitted into nodes
+		\param row fetch data from this line.
 	*/
 
 	struct tm tmTimeTemp;
+	tmTimeTemp.tm_year = 2019;  
 	std::vector<double> vdTime;
 	vdTime.clear();
 	
-	if (row < this->vvTrainingDataMatrix.size()) // check if column is in valid range
+	if (row < this->vvLoadedData.size()) // check if column is in valid range
 	{
 		if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
 		{
-			tmTimeTemp.tm_year = (int)this->vvTrainingDataMatrix.at(row).at(1);
-			tmTimeTemp.tm_mon = (int)this->vvTrainingDataMatrix.at(row).at(2);
-			tmTimeTemp.tm_mday = (int)this->vvTrainingDataMatrix.at(row).at(3);
+			tmTimeTemp.tm_year = (int)this->vvLoadedData.at(row).at(1);
+			tmTimeTemp.tm_mon = (int)this->vvLoadedData.at(row).at(2);
+			tmTimeTemp.tm_mday = (int)this->vvLoadedData.at(row).at(3);
 		}
 		if (this->intTimeDataMode == 3 || this->intTimeDataMode == 4)
 		{
-			int iTimeOff = 0;
+			size_t iTimeOff = 0;
 			if (this->intTimeDataMode == 4)
 			{
 				// date is stored before time therefore time is with offset 3 
 				iTimeOff = 3;
 			}
-			tmTimeTemp.tm_hour = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 1);
-			tmTimeTemp.tm_min = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 2);
-			tmTimeTemp.tm_sec = (int)this->vvTrainingDataMatrix.at(row).at(iTimeOff + 3);
+			tmTimeTemp.tm_hour = (int)this->vvLoadedData.at(row).at(iTimeOff + 1);
+			tmTimeTemp.tm_min = (int)this->vvLoadedData.at(row).at(iTimeOff + 2);
+			tmTimeTemp.tm_sec = (int)this->vvLoadedData.at(row).at(iTimeOff + 3);
 		}
 		mktime(&tmTimeTemp);
 		if (this->intTimeDataMode == 2 || this->intTimeDataMode == 4)
@@ -201,7 +232,7 @@ std::vector<double> AINetTrainingData::getInputDateTime(size_t row)
 			vdTime.push_back(tmTimeTemp.tm_hour / 24.0);
 			vdTime.push_back(tmTimeTemp.tm_min / 60.0);
 			vdTime.push_back(tmTimeTemp.tm_sec / 60.0);
-			vdTime.push_back(tmTimeTemp.tm_hour / 24 * tmTimeTemp.tm_min / 60.0 * tmTimeTemp.tm_sec / 60.0); // time as seconds of day
+			vdTime.push_back((tmTimeTemp.tm_hour / 24) * (tmTimeTemp.tm_min / 60.0) * (tmTimeTemp.tm_sec / 60.0)); // time as seconds of day
 			vdTime.push_back(tmTimeTemp.tm_hour <= 11 ? 0 : 1); // morning or evening
 		}
 	}
@@ -216,19 +247,25 @@ size_t AINetTrainingData::getTrainingRowSizeT(size_t row)
 	*/
 
 	size_t intReturn = 0;
-	if (row < this->vvTrainingDataMatrix.size())
+	if (row < this->vvCalculationData.size())
 	{
-		intReturn = this->vvTrainingDataMatrix.at(row).size();
+		intReturn = this->vvCalculationData.at(row).size();
 	}
 	return intReturn;
 }
 
-std::vector<size_t> AINetTrainingData::getNetworkTopology()
+std::vector<size_t> AINetTrainingData::getNetworkTopology(bool bFromData)
 {
 	/** This function will return the topology from training data file.
+		\param bFromData to be set if the network topology should be loaded from the training data and not be altered by other means.
 		\return The topology of the network from training data file.
 	*/
-	return this->vdNetworkTopology;
+	std::vector<size_t> vecTmpTopology = this->vdNetworkTopology;
+	if(!bFromData && this->bHasTiming)
+	{
+		vecTmpTopology.at(0) = this->vdNetworkTopology.at(0) + this->vvTimingData.size();
+	}
+	return vecTmpTopology;
 }
 
 std::vector<std::vector<double>> AINetTrainingData::getTrainingDataMatrix()
@@ -236,7 +273,7 @@ std::vector<std::vector<double>> AINetTrainingData::getTrainingDataMatrix()
 	/** This function returns the training data as new object.
 		\return std::vector<std::vector<double>> a new training data object.
 	*/
-	return this->vvTrainingDataMatrix;
+	return this->vvCalculationData;
 }
 
 std::vector<std::vector<double>>* AINetTrainingData::ptrTrainingDataMatix()
@@ -244,7 +281,7 @@ std::vector<std::vector<double>>* AINetTrainingData::ptrTrainingDataMatix()
 	/** This function returns a pointer to training data. 
 		\return std::vector<std::vector<double>>* pointer to training data.
 	*/
-	return &this->vvTrainingDataMatrix;
+	return &this->vvCalculationData;
 }
 
 std::string AINetTrainingData::getTrainingDataFileName()
@@ -260,6 +297,7 @@ std::string AINetTrainingData::setTrainingDataFileName(std::string strFileName)
 	/** This will set the file name of the training data file. 
 		\return String of file name.
 	*/
+	
 	// TODO: add some verification here.
 	this->strAIDataFileName;
 	return this->strAIDataFileName;
@@ -271,6 +309,7 @@ bool AINetTrainingData::setOptionCSVGermanStyle(bool bGerStyle)
 		\param bGerStyle if a german csv file is to be loaded this has to be set to true
 		\return returns input parameter if set correctly.
 	*/
+
 	this->bOptionCSVGER = bGerStyle;
 	return this->bOptionCSVGER;
 }
@@ -310,6 +349,7 @@ bool AINetTrainingData::setPreferredNetworkTopology(std::vector<size_t> vsPref)
 		\param vsPref is a vector<size_t> with the topology as integer values from input (lowest) to output (highest)
 		\return returns true if successfull
 	*/
+
 	this->vdNetworkTopology = vsPref;
 	return (this->vdNetworkTopology == vsPref);
 }
@@ -321,6 +361,7 @@ std::vector<size_t> AINetTrainingData::splitStringToSizeT(const std::string & st
 		\param strDelimiter is string, which is used to split \p strInput into pieces.
 		\return is returning the content of \p strInput converted into a vector of integers.
 	*/
+
 	std::vector<size_t> strElements;
 
 	for (size_t stStart = 0, stEnd; stStart < strInput.length(); stStart = stEnd + strDelimiter.length())
@@ -352,6 +393,7 @@ std::vector<double> AINetTrainingData::splitStringToDouble(const std::string & s
 		\param strDelimiter is string, which is used to split \p strInput into pieces.
 		\return is returning the content of \p strInput converted into a vector of doubles.
 	*/
+
 	std::vector<double> strElements;
 
 	for (size_t stStart = 0, stEnd; stStart < strInput.length(); stStart = stEnd + strDelimiter.length())
@@ -381,26 +423,47 @@ bool AINetTrainingData::createTimingData()
 	The resulting data may have a variable size.
 	The network topology is to be reset afterwards.
 	*/
-	this->vvTimingData.clear();
 
-	this->vvTimingData.reserve(this->vvTrainingDataMatrix.size());
+	this->vvTimingData.clear();
+	this->vvCalculationData.clear();
+	this->bHasTiming = false;
+
+	this->vvTimingData.reserve(this->vvLoadedData.size());
 	
 	if (this->intTimeDataMode > 1)
 	{
 		// there is timing data present
-		for (size_t i = 0; i < this->vvTrainingDataMatrix.size(); ++i)
+		for (size_t i = 0; i < this->vvLoadedData.size(); ++i)
 		{
 			this->vvTimingData.push_back(this->getInputDateTime(i));
 		}
 	}
 
-	if (this->vvTimingData.size() == this->vvTrainingDataMatrix.size())
+	if (this->vvTimingData.size() == this->vvLoadedData.size()) // check if all elements have been converted.
 	{
-		this->bHasTiming = true;
+		std::vector<double> vdTmp;
+		for (size_t i = 0; i < this->vvTimingData.size(); ++i)
+		{
+			vdTmp = this->vvTimingData.at(i); // put timing-data up front
+			for (size_t j = 0; j < this->vvLoadedData.at(i).size(); ++j)
+			{
+				vdTmp.push_back(this->vvLoadedData.at(i).at(j)); // add loaded data
+			}
+			this->vvCalculationData.push_back(vdTmp); // now put the glued timing and loaded data into storage
+		}
+
+		if (this->vvLoadedData.size() == this->vvCalculationData.size())
+		{
+			this->bHasTiming = true;
+		}
+		else
+		{
+			//something went wrong during copy operation.
+		}
 	}
 	else
 	{
-		this->bHasTiming = false;
+		//something went wrong during copy operation.
 	}
 	return this->bHasTiming;
 }
@@ -453,8 +516,8 @@ size_t AINetTrainingData::loadTrainingDataFile()
 	/** This function is used to load all the training data.
 	  * \return the number of unreadable lines.
 	*/
-	std::string theLine = "no open file.";
-	int theFirstElement = 0;
+	std::string theLine = "no open file."; // line of text loaded from file.
+	size_t theFirstElement = 0;
 	unsigned int iNumberOfLines = 0;
 	unsigned int iNumberOfFalseLines = 0;
 	int iTimePreviousElements = 0;	// How many previous rows for calculation?
@@ -464,7 +527,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 	this->openTrainingDataFile(theAIDataFile);
 
 	// clear old training data
-	this->vvTrainingDataMatrix.clear();
+	this->vvLoadedData.clear();
 
 	if (theAIDataFile.is_open())
 	{
@@ -522,7 +585,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 				break;
 			case 5:
 				// Todo change this
-				this->dPercentVerificationData = std::min(0.0, std::max(1.0, atof(theLine.substr(0, theFirstElement).c_str())));
+				this->dPercentVerificationData = min(0.0, max(1.0, atof(theLine.substr(0, theFirstElement).c_str())));
 				break;
 			case 6:
 				tmpIsTimeData = theLine.substr(0, theFirstElement);
@@ -594,7 +657,7 @@ size_t AINetTrainingData::loadTrainingDataFile()
 			if (vdLocalVector.size() >= 1 + this->vdNetworkTopology.front() + this->vdNetworkTopology.back())
 			{
 				// counting number of lines and copying whole row to vector<vector>
-				this->vvTrainingDataMatrix.push_back(vdLocalVector);
+				this->vvLoadedData.push_back(vdLocalVector);
 				iNumberOfLines += 1;
 			}
 			else
@@ -603,9 +666,11 @@ size_t AINetTrainingData::loadTrainingDataFile()
 				iNumberOfFalseLines += 1;
 			}
 		}
+		theLine = "";
 	}
 
 	this->closeTrainingDataFile(theAIDataFile);
+	this->vvCalculationData = this->vvLoadedData;
 
 	return iNumberOfFalseLines;
 }

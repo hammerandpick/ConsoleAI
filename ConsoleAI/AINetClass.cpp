@@ -143,12 +143,11 @@ size_t AINetClass::Counter(bool bIncrease )
 size_t AINetClass::CurrentTrainingDataRow()
 {
 	// returns current Training Data Row
-	size_t tmpReturn;
+	size_t tmpReturn = 0;
 	size_t tmpMaxRows = this->getTrainingDataRowsMax();
 	if (tmpMaxRows == 0)
 	{
 		this->throwFailure("division by 0 iTrainingDataRowsUseMax", true);
-		tmpReturn= 0;
 	}
 	else
 	{
@@ -659,10 +658,10 @@ void AINetClass::calculateLine(size_t iTmpRow)
 
 void AINetClass::sortNetwork()
 {
-	// this function sorts the network
-	
+	/** This function is meant to sort the network, so multiple networks can be combined */
+
 	// begin sorting at the end of the network (of course we won't sort output)
-	for (size_t iSort = this->getNumberOfLayers(); iSort > 1; iSort--)
+	for (size_t iSort = this->getNumberOfLayers(); iSort > 1; --iSort)
 	{
 		// reload network variables to tmp variables each layer.
 		std::vector<double> vdTmpValues = this->vecValues;
@@ -726,7 +725,7 @@ void AINetClass::sortNetwork()
 				{
 					jNode = jBegin + j;
 					this->vecWeights.at(jNode).at(iNode) = vdTmpWeights[jNode][iBegin + viSortList.at(i)];
-					//todo continue
+					//todo continue, but what?
 				}
 				// sort weights from previous layer
 				jBegin = this->getLayerStart(iSort);
@@ -734,7 +733,7 @@ void AINetClass::sortNetwork()
 				{
 					jNode = jBegin + j;
 					this->vecWeights.at(iNode).at(jNode) = vdTmpWeights[iBegin + viSortList.at(i)][jNode];
-					//todo continue
+					//todo continue, but what?
 				}
 			}
 		}
@@ -1022,7 +1021,7 @@ void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed, bool bDele
 	/** This function is used to create the initial connection of nodes.
 		\param bFullyConnected is used to link al nodes from one layer with all nodes from the previous layer.
 		\param iRandSeed is the seed for the random number generator.
-		\param deleteExisting (optional) delete existing connections and reset all values.
+		\param bDeleteExisting (optional) delete existing connections and reset all values.
 	*/
 
 	if (!this->initializationDone)
@@ -1035,6 +1034,7 @@ void AINetClass::connectNodes(bool bFullyConnected, size_t iRandSeed, bool bDele
 		this->bHasBeenConnected = true;
 		// first do the auto-generation if parameter is set
 		this->autoGenerateInternalNetwork();
+
 		// TODO allow smart connected network by removing next line of code
 		bFullyConnected = true;
 		//variables

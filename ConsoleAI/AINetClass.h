@@ -29,7 +29,7 @@ public:
 	size_t getNumberOfNodesInLayer(signed int iTmpLayer);
 	size_t getNumberOfNodesInLayer(size_t tmpLayer);
 	size_t getNumberOfLayers(bool bOnlyHidden = false);
-	size_t getLayerStart(int iTmpLayer, bool falseForLayerEnd = true);
+	size_t getLayerStart(int tmpLayer, bool falseForLayerEnd = true);
 	
 	double LearningRate();
 	size_t TrainingDataColumns();
